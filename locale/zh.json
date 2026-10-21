@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "DSH 3D（开发版）",
-    "description": "面向 DeepSeek Harness 的 Blender 建模与图像重建插件，基于 CheshireJCat/blender 开发。每次启用一个 Blender 插件版本。"
+    "description": "Blender 建模与图像重建插件，新增原生连续雕刻、撤销重做和实时视图反馈。基于 CheshireJCat/blender；每次启用一个 Blender 插件版本。"
   }
 }

@@ -8,11 +8,11 @@ DSH 3D is developed from [CheshireJCat/blender](https://github.com/CheshireJCat/
 
 ## Status
 
-This is an early development baseline. Current project-specific changes establish a separate plugin identity, local installation, bilingual display metadata, and project documentation. Research and implementation of additional reconstruction capabilities will build on this baseline.
+The development version adds persistent native sculpting and live viewport feedback. An agent can keep one editing session open, use brushes repeatedly, change views, undo/redo, and save a new `.blend` when the edit is complete.
 
-The inherited capabilities include:
+Current capabilities include:
 
-- 13 Blender tools for scene inspection, Python modeling, imports, previews, rendering, exports, and validation.
+- 15 Blender tools: the 13 upstream tools plus `blender_sculpt` and `blender_view`.
 - 30 skills covering modeling, reference-image reconstruction, materials, lighting, animation, and artifact handoff.
 - 26 analysis and validation helpers, with 23 enabled by default.
 
@@ -43,6 +43,16 @@ For a custom Blender executable, add the following to your web profile's `cordis
 
 Model-provider credentials belong in your dsh environment or configuration. Keep API keys and local `.env` files outside version control.
 
+## Native sculpting
+
+Prepare a dense, visible mesh with the existing tools, then ask the agent to enter `blender_sculpt` with `action: "begin"`, the input `blend_path` and `object_name`. Repeated `stroke` calls use native Draw, Grab, Smooth or Inflate/Deflate brushes and return image content directly to the model. `blender_view` controls standard views, orbit, zoom, pan, framing and projection. `undo`/`redo` operate on strokes; `commit` saves a new `.blend`, and `discard` exits with the original preserved.
+
+Strokes use the latest `view_id` and 2–256 `[u,v,pressure?]` samples normalized to the returned image (top-left origin). `radius` is a fraction of image width. Each conversation owns its session; file-based tools resume after exit. Recovery files, view images and a journal remain in `.dsh-blender/sculpt/<edit_id>/`. Recovery is periodic, with a default 30-minute idle timeout. The latest 64 stroke boundaries are available for undo/redo.
+
+The first version supports fixed-topology base meshes and Essentials brushes; prepare mesh density before entry. It requires a desktop graphics context and was tested on Blender **5.2.2 LTS / macOS ARM64**. Multires, Shape Keys and Dynamic Topology are reserved for future work. The default viewport provides geometry feedback; authored camera renders remain the final appearance check.
+
+Run `BLENDER_EXECUTABLE=/absolute/path/to/blender pnpm test:sculpt` for the real native integration test.
+
 ## Development
 
 ```sh
@@ -58,7 +68,7 @@ RUN_BLENDER_TESTS=1 pnpm test
 RUN_HELPER_TESTS=1 pnpm test
 ```
 
-Blender operations run through local background Blender processes. Python modeling code has the permissions of the local Blender process; workspace output guards and validation behavior are inherited from the upstream implementation.
+File-based operations use local background Blender processes. Sculpting uses a persistent windowed process with a graphics context. Python modeling code has the permissions of the local Blender process; workspace output guards and validation behavior are inherited from the upstream implementation.
 
 ## Credits and license
 

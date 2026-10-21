@@ -16,6 +16,8 @@ const required = [
   'scripts/clean-package.js',
   'scripts/setup-analysis.js',
   'lib/helper-catalog.js',
+  'lib/sculpt-session.js',
+  'scripts/dsh_sculpt_worker.py',
   'requirements-analysis.txt',
   'README.md',
   'README.zh-CN.md',

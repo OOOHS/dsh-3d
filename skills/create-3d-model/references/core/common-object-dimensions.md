@@ -57,7 +57,7 @@ The hard limit: a real human face requires **subtractive sculpting** (eye socket
    - `generate_hyper3d_model_via_text` — text-to-3D AI generation
    These produce a real human mesh foundation that the orchestrator can then materially / lighting / pose via existing skills.
 
-2. **Sculpt mode** — gestural, not driven well from natural-language. The skill can prepare a base mesh and recommend the user sculpts manually.
+2. **Native sculpt mode** — prepare a sufficiently dense base mesh, then use `blender_sculpt` for repeated brush edits and `blender_view` for visual feedback. Single-image character reconstruction still requires careful shape and multiview validation.
 
 3. **Use a Blender character artist** — provide the references, target topology, rigging needs, texture resolution, facial-expression requirements, and export target as a concrete brief.
 

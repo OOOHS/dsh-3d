@@ -21,7 +21,7 @@ async function runtime(host, reportPath) {
   const { ctx } = await runProfile({ environment, profile, patchFiles: [], args: [] })
   try {
     const tools = ctx.tools.schemas().map((tool) => tool.name).filter((name) => name.startsWith('blender_'))
-    assert.equal(tools.length, 13)
+    assert.equal(tools.length, 15)
     const workspace = await mkdtemp(join(process.env.DSH_HOME, 'workspace-'))
     const skills = (await ctx.skills.list({ cwd: workspace })).filter((skill) => skill.provider === 'dsh-3d')
     assert.equal(skills.length, 30)

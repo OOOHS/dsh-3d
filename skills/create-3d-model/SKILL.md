@@ -1,6 +1,6 @@
 ---
 name: create-3d-model
-description: Create and refine portable 3D models from text prompts, one or more reference images, wireframes, orthographic views, templates, texture atlases, or existing 3D assets. Use whenever the dsh agent must model or reconstruct geometry, match visual references, create materials and UVs, rig or animate a model, validate shape or multiview fidelity, repair a subpar asset, edit an existing Blender scene, or export GLB, glTF, FBX, OBJ, USD, STL, or another requested 3D format. Uses the dsh-blender tools and Blender as the production backend while treating the transferable 3D model as the normal deliverable.
+description: Create and refine portable 3D models from text prompts, one or more reference images, wireframes, orthographic views, templates, texture atlases, or existing 3D assets. Use whenever the dsh agent must model or reconstruct geometry, match visual references, create materials and UVs, rig or animate a model, validate shape or multiview fidelity, repair a subpar asset, edit an existing Blender scene, or export GLB, glTF, FBX, OBJ, USD, STL, or another requested 3D format. Uses the DSH 3D tools and Blender as the production backend while treating the transferable 3D model as the normal deliverable.
 ---
 
 # Create 3D Model
@@ -22,6 +22,7 @@ Do not read every module preemptively. Load the orchestrator or domain module fi
 
 - Call `blender_status` before the first modeling operation. It reports Blender, the analysis runtime, registered skills, helpers, and workspace.
 - Use `blender_scene_info` and `blender_object_info` for structural inspection. Use `blender_import` before editing a non-Blend asset.
+- Use `blender_sculpt` for a persistent native brush session and `blender_view` for live image feedback and view changes. Load `blender-modeling` for its coordinate and lifecycle contract.
 - Use `blender_python` for controlled `bpy` changes, `blender_preview` for camera-free blockout evidence, `blender_render` or `blender_render_frames` for presentation/animation evidence, and `blender_export` for portable deliverables.
 - Run `blender_validate_scene` before export and `blender_validate_export` after export. For reference, wireframe, contour, multiview, UV, texture, look, repair, or animation QA, discover and run deterministic helpers through `blender_helper_catalog` and `blender_helper_run`.
 - If `blender_status.available` is false, stop and report the executable/configuration error. Do not claim Blender work completed while the backend is unavailable.

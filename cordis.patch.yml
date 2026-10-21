@@ -9,6 +9,8 @@
         maxOutputChars: 20000
         restrictToWorkspace: true
         enablePython: true
+        enableSculpt: true
+        sculptIdleTimeoutMs: 1800000
         enableHelpers: true
         enableMaintenanceHelpers: false
         registerSkill: true

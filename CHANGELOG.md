@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.2.3-dev.1 - 2026-10-21
+
+- Add `blender_sculpt`: conversation-owned, persistent native Draw/Grab/Smooth/Inflate editing, stroke undo/redo, explicit commit/discard, periodic recovery and a journal.
+- Add `blender_view`: live image attachments, standard views, orbit, zoom, pan, framing and projection; image-bound normalized stroke coordinates.
+- Serialize scene operations, reject stale views and conflicting file operations, deduplicate retries, and clean up workers on cancellation and plugin unload.
+- Update bundled modeling guidance and add native Blender and session lifecycle coverage. Preserve the original 13 tools, 30 skills and upstream provenance.
+
 ## 0.2.3 - 2026-10-12
 
 - Declare exact compatibility with DSH `0.2.0-rc.2`, `0.2.1-alpha.1`, and `0.2.1-alpha.2`, with disposable-Profile install/start/uninstall evidence; rollback remains unverified.

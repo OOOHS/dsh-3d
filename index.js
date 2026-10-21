@@ -9,6 +9,7 @@ import { defineTool } from '@deepseek-ai/dsh-tools'
 import Schema from '@deepseek-ai/schemastery'
 
 import { HELPER_BY_NAME, HELPER_CATALOG } from './lib/helper-catalog.js'
+import { SculptSessions, createSculptTools } from './lib/sculpt-session.js'
 
 export const name = 'dsh-3d'
 export const inject = ['tools', 'skills']
@@ -21,6 +22,8 @@ export const Config = Schema.object({
   maxOutputChars: Schema.number().default(20000),
   restrictToWorkspace: Schema.boolean().default(true),
   enablePython: Schema.boolean().default(true),
+  enableSculpt: Schema.boolean().default(true),
+  sculptIdleTimeoutMs: Schema.number().default(1800000),
   enableHelpers: Schema.boolean().default(true),
   enableMaintenanceHelpers: Schema.boolean().default(false),
   registerSkill: Schema.boolean().default(true),
@@ -38,7 +41,7 @@ const SUPPORTED_IMPORTS = new Set([...SUPPORTED_EXPORTS, '.dae'])
 const SUPPORTED_RENDERS = new Set(['.png', '.jpg', '.jpeg'])
 const MODULE_RUNTIME_PREAMBLE = `## DeepSeek Harness runtime mapping
 
-This bundled domain skill executes through the dsh-blender plugin. Use \`blender_scene_info\` and \`blender_object_info\` for inspection, \`blender_import\` for non-Blend inputs, \`blender_python\` for controlled scene changes, \`blender_preview\`/\`blender_render\`/\`blender_render_frames\` for visual evidence, and \`blender_validate_scene\` plus \`blender_validate_export\` for acceptance gates. Discover this module's deterministic scripts with \`blender_helper_catalog({ module: "<this skill name>" })\` and execute them with \`blender_helper_run\`; do not guess package paths. This mapping overrides legacy MCP, Bash, or fixed tool-name instructions below.`
+This bundled domain skill executes through DSH 3D. Use \`blender_sculpt\` for persistent native brush edits and \`blender_view\` for live image feedback; commit or discard before file-based tools. Use \`blender_scene_info\` and \`blender_object_info\` for inspection, \`blender_import\` for non-Blend inputs, \`blender_python\` for controlled scene changes, \`blender_preview\`/\`blender_render\`/\`blender_render_frames\` for visual evidence, and \`blender_validate_scene\` plus \`blender_validate_export\` for acceptance gates. Discover this module's deterministic scripts with \`blender_helper_catalog({ module: "<this skill name>" })\` and execute them with \`blender_helper_run\`; do not guess package paths. This mapping overrides legacy MCP, Bash, or fixed tool-name instructions below.`
 
 const sceneSchema = {
   type: 'object',
@@ -52,6 +55,9 @@ const logSchema = {
 }
 
 function assertConfig(config) {
+  if (config.sculptIdleTimeoutMs !== undefined && (!Number.isFinite(config.sculptIdleTimeoutMs) || config.sculptIdleTimeoutMs < 1000)) {
+    throw new Error('dsh-3d: sculptIdleTimeoutMs must be at least 1000')
+  }
   if (!Number.isFinite(config.timeoutMs) || config.timeoutMs <= 0) {
     throw new Error('blender-modeling: timeoutMs must be a positive finite number')
   }
@@ -1199,7 +1205,21 @@ function createTools(config) {
 export function apply(ctx, config) {
   assertConfig(config)
   if (config.registerSkill) registerSkills(ctx, config)
-  for (const tool of createTools(config)) ctx.tools.register(tool)
+  const sessions = config.enableSculpt !== false ? new SculptSessions(config, {
+    resolve: resolveWorkspacePath,
+    file: assertRegularFile,
+    writable: (path, overwrite) => assertWritableTarget(path, overwrite, 'save_path'),
+  }, () => ctx.get?.('attachments')) : undefined
+  ctx.effect?.(() => () => sessions?.dispose())
+  for (const tool of createTools(config)) {
+    ctx.tools.register(sessions ? { ...tool, execute(args, exec) {
+      return sessions.serial(async () => {
+        await sessions.guard(tool.name, args, exec)
+        return tool.execute(args, exec)
+      })
+    } } : tool)
+  }
+  if (sessions) for (const tool of createSculptTools(sessions)) ctx.tools.register(tool)
 }
 
 export const internals = {

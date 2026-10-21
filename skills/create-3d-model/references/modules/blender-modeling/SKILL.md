@@ -1,8 +1,8 @@
 ---
 name: blender-modeling
 description: Create and edit 3D meshes in Blender — primitives, hard-surface modeling, mesh operators, modifier stacks (Bevel, Subdivision, Boolean, Mirror, Array, Solidify), bmesh-level edits, retopology basics. Use whenever the user asks to "make/model/create/build a 3D object", "shape/sculpt this", "add a cube/sphere/cylinder/etc.", "extrude/inset/bevel this face", "add a modifier", or any geometry-creation request that isn't a wireframe trace. Make sure to use this skill even if the user does not say "model" — also covers "make a sword", "build a chair", "add a door", "carve out a hole". Pairs with blender-materials for look-dev and blender-pro-workflow for full pipelines.
-when_to_use: Any geometry creation, mesh edit, or modifier stack work in Blender. Not for wireframe → 3D conversion (use wireframe-to-3d) and not for sculpting strokes (Blender's sculpt mode is gestural, not text-driven).
-allowed-tools: Read Bash blender_python blender_scene_info blender_scene_info
+when_to_use: Geometry creation, mesh editing, native sculpt strokes, and modifier stacks in Blender. Route wireframe conversion to wireframe-to-3d.
+allowed-tools: Read Bash blender_python blender_scene_info blender_sculpt blender_view
 ---
 
 # Blender Modeling
@@ -19,7 +19,7 @@ What kind of geometry?
 │
 ├── Organic (characters, creatures, plants — block-out only)
 │   → Ico Sphere + sculpting (or Voxel Remesh for shape)
-│   → For sculpting strokes, redirect: it's gestural, not text-driven
+│   → Use blender_sculpt for native brush strokes; blender_view returns live images
 │
 ├── Architectural / repeating (fences, columns, tile)
 │   → Plane/Cube + Array modifier (+ Curve modifier for paths)
@@ -44,6 +44,18 @@ What kind of geometry?
 - Always name objects with `GEO-` prefix. Never leave `Cube.027`.
 - Print structured output back so you can parse results.
 - Chunk long sequences into multiple calls.
+
+## Native sculpt editing (DSH 3D)
+
+Use `blender_sculpt` for localized Draw, Grab, Smooth and Inflate/Deflate edits. Prepare a visible mesh with sufficient density using `blender_python`, then enter once with `action: "begin"`, `blend_path`, and `object_name`. The returned image is the live viewport and carries `edit_id`, `view_id`, dimensions, revision and geometry hash.
+
+During the session, call `action: "stroke"` repeatedly with that `edit_id`, the **latest** `view_id`, `brush`, `points: [[u,v,pressure?], ...]`, `radius` and `strength`. Coordinates range from 0 to 1, with the origin at the image's top-left; radius is a fraction of image width. Use at least two samples (repeat a point for a dab). Each stroke returns the resulting image; inspect it before further edits. A stale view is rejected and requires a fresh `blender_view` call.
+
+Use `blender_view` with `preset` (front/back/left/right/top/bottom), `orbit: [yaw,pitch]` in degrees, `zoom`, `pan: [right,up]`, `frame`, `rotation: [w,x,y,z]`, or `projection`. View changes preserve sculpt history. `action: "undo"` and `"redo"` return to stroke boundaries; they stay inside the same editing session. The latest 64 stroke boundaries are retained.
+
+Exit with `action: "commit"` and a new `save_path`, or `action: "discard"`. A commit creates one versioned `.blend`; ordinary file-based tools resume afterward. The source stays preserved. Other conversations cannot operate this edit ID. The editing directory `.dsh-blender/sculpt/<edit_id>/` retains viewport images, a journal and a recovery file (at entry and periodically). The idle timeout defaults to 30 minutes.
+
+This version uses a windowed Blender process with a desktop graphics context and Essentials brush assets (tested on Blender 5.2.2 LTS/macOS ARM64). It supports base meshes with fixed topology; prepare topology before entry. Multires, Shape Keys and Dynamic Topology need a separate implementation. The viewport is geometry feedback; use authored renders after commit for final material/lighting checks.
 
 ## Recipes
 
@@ -359,6 +371,5 @@ The reference covers: bmesh.ops cookbook, all `bpy.ops.mesh.*` operators worth k
 ## What this skill is NOT for
 
 - Wireframe drawing → 3D model: use `wireframe-to-3d`
-- Sculpting strokes: Blender's sculpt mode is gestural; can't be driven well from text
 - Sweep-along-path / lofting / curve-driven shapes: covered in `wireframe-to-3d/references/blender-patterns.md`
 - Materials / lighting / rendering: redirect to those skills

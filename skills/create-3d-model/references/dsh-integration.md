@@ -1,6 +1,6 @@
 # DeepSeek Harness integration
 
-This file owns the runtime mapping between the reusable modeling workflow and the `dsh-blender` plugin. When a vendored module mentions BlenderMCP, a fixed MCP tool name, Codex, Claude, or an external control port, translate it to the tools and rules below.
+This file owns the runtime mapping between the reusable modeling workflow and the `dsh-3d` plugin. When a vendored module mentions BlenderMCP, a fixed MCP tool name, Codex, Claude, or an external control port, translate it to the tools and rules below.
 
 ## Runtime shape
 
@@ -22,9 +22,13 @@ The plugin exposes these model-facing tools:
 | `blender_validate_scene` | Audit topology, UVs, materials, transforms, and animation for a target profile | none |
 | `blender_validate_export` | Re-import and validate a portable export in a clean Blender process | none |
 | `blender_helper_catalog` | Discover all deterministic reference/reconstruction/QA helpers and exact arguments | none |
+| `blender_sculpt` | Persistent native brush session: begin, stroke, undo/redo, status, commit/discard | in-memory mesh; commit creates `.blend` |
+| `blender_view` | Live sculpt image, standard views, orbit, zoom, pan and framing | view state only |
 | `blender_helper_run` | Run one whitelisted helper inside the workspace | creates declared reports/images/recipes |
 
 The ordinary dsh `read`, `read_image`, file-search, and shell tools remain available for reference analysis and helper scripts. Use `read_image` after every significant render; the existence of a render file is not visual evidence by itself.
+
+During an active sculpt session, use its returned image blocks directly and call `blender_view` for fresh observations. File-based Blender operations resume after commit or discard. See `blender-modeling` for brush coordinates and session actions.
 
 ## Workspace and path contract
 
@@ -33,7 +37,7 @@ Tool paths resolve against `exec.agent.session.header.cwd`, the workspace attach
 - Put durable outputs under a clear workspace directory such as `artifacts/<task-name>/`.
 - Use a new versioned `.blend` path for each broad phase, for example `lamp-blockout-v001.blend` and `lamp-final-v002.blend`.
 - Do not set `allow_overwrite` unless the user explicitly wants the named existing file replaced.
-- Do not use `/tmp` for deliverables. Internal payload files are private implementation details and are removed after each tool call.
+- Do not use `/tmp` for deliverables. One-shot payloads are removed after each call. Sculpt sessions retain recovery, journal and view images under `.dsh-blender/sculpt/`.
 
 ## Tool sequence
 

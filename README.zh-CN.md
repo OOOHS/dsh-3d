@@ -8,11 +8,11 @@
 
 ## 当前进展
 
-项目处于开发基线阶段。当前新增内容是独立插件身份、本地安装方式、中英文界面名称和项目文档；图像重建能力的进一步扩展将基于这一版本开展。
+开发版已加入持续雕刻会话和实时视口图片反馈。Agent 可以在同一场景中连续使用笔刷、调整视角、撤销和重做，在退出编辑时保存新的 `.blend`。
 
-继承的现有能力包括：
+当前能力包括：
 
-- 13 个 Blender 工具，覆盖场景检查、Python 建模、导入、预览、渲染、导出和验证。
+- 15 个 Blender 工具：上游的 13 个工具，加上 `blender_sculpt` 和 `blender_view`。
 - 30 个 skills，覆盖建模、参考图重建、材质、灯光、动画和产物交付。
 - 26 个分析与验证 helper，默认启用其中 23 个。
 
@@ -43,6 +43,16 @@ Blender 可在 PATH 中提供，也可在 web profile 的 `cordis.patch.yml` 中
 
 模型服务与 API Key 通过 dsh 环境或配置提供，密钥与本机 `.env` 文件应保存在版本控制之外。
 
+## 连续雕刻
+
+使用已有工具准备可见且密度足够的网格，然后让 Agent 调用 `blender_sculpt`，以 `action: "begin"`、`blend_path` 和 `object_name` 进入编辑。模型可以反复调用 `stroke` 使用原生 Draw、Grab、Smooth、Inflate/Deflate 笔刷，每次调用直接返回图片内容。`blender_view` 提供标准视角、环绕、缩放、平移、取景和投影切换；`undo` / `redo` 按笔画回退；`commit` 保存新的 `.blend`；`discard` 退出并保留原文件。
+
+笔画使用最近返回的 `view_id`，以及 2～256 个 `[u,v,pressure?]` 采样点。坐标归一化到图片的 0～1 范围，原点在左上角；半径为图片宽度的比例。会话归属当前对话，退出后恢复普通文件工具。恢复文件、视图和日志保存在 `.dsh-blender/sculpt/<edit_id>/`；恢复文件在进入时及之后定期保存，默认空闲 30 分钟后退出，撤销最多保留最近 64 个笔画边界。
+
+首版覆盖固定拓扑的基础网格和 Essentials 笔刷，进入前准备好网格密度。需要桌面图形上下文，已在 **Blender 5.2.2 LTS / macOS ARM64** 验证。Multires、Shape Keys 和动态拓扑留待后续扩展。视口用于观察几何，提交后使用正式相机渲染检查最终材质与灯光。
+
+真实原生接口测试：`BLENDER_EXECUTABLE=/absolute/path/to/blender pnpm test:sculpt`。
+
 ## 开发检查
 
 ```sh
@@ -58,7 +68,7 @@ RUN_BLENDER_TESTS=1 pnpm test
 RUN_HELPER_TESTS=1 pnpm test
 ```
 
-插件通过本机 Blender 后台进程执行操作。Python 建模代码使用本地 Blender 进程的权限，工作区输出限制与验证行为沿用上游实现。
+文件操作使用本机 Blender 后台进程；雕刻使用带图形上下文的持续窗口进程。Python 建模代码使用本地 Blender 进程的权限，工作区输出限制与验证行为沿用上游实现。
 
 ## 致谢与许可
 
