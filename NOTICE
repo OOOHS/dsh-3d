@@ -1,3 +1,10 @@
+dsh-3d is developed from dsh-blender 0.2.3 by CheshireJCat:
+  https://github.com/CheshireJCat/blender
+  Baseline commit: 9bd95e97a61096cfae1edb0f88fcd2be54b0adee
+
+The upstream Git history, copyright notices, and license files are retained.
+The following notice is preserved from dsh-blender:
+
 dsh-blender includes an adapted copy of the create-3d-model Agent Skill from:
 
   /Users/nekos/git/create-3d-model-skill

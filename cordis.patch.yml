@@ -1,6 +1,6 @@
 - insert:
-    - id: blender-modeling
-      name: dsh-blender
+    - id: dsh-3d
+      name: dsh-3d
       config:
         blenderExecutable: blender
         analysisPythonExecutable: ''

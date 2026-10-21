@@ -1,27 +1,31 @@
 {
-  "name": "dsh-blender",
-  "version": "0.2.3",
-  "description": "DeepSeek Harness Blender production, reconstruction, validation, and export plugin",
+  "name": "dsh-3d",
+  "version": "0.2.3-dev.0",
+  "private": true,
+  "description": "A DeepSeek Harness plugin for Blender-based 3D modeling and image reconstruction.",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/CheshireJCat/blender.git"
+    "url": "git+https://github.com/OOOHS/dsh-3d.git"
   },
-  "homepage": "https://github.com/CheshireJCat/blender#readme",
+  "homepage": "https://github.com/OOOHS/dsh-3d#readme",
   "bugs": {
-    "url": "https://github.com/CheshireJCat/blender/issues"
+    "url": "https://github.com/OOOHS/dsh-3d/issues"
   },
   "type": "module",
   "main": "index.js",
   "bin": {
-    "dsh-blender-setup": "scripts/setup-analysis.js"
+    "dsh-3d-setup": "scripts/setup-analysis.js"
   },
   "exports": {
-    ".": "./index.js"
+    ".": "./index.js",
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json"
   },
   "files": [
     "index.js",
     "cordis.patch.yml",
     "lib",
+    "locale",
     "scripts",
     "skills",
     "requirements-analysis.txt",

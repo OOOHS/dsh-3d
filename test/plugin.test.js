@@ -45,7 +45,7 @@ test('registers the complete skill stack and Blender production tools', () => {
   ])
   assert.equal(skills.length, 30)
   assert.equal(skills[0].name, 'create-3d-model')
-  assert.equal(skills[0].provider, 'dsh-blender')
+  assert.equal(skills[0].provider, 'dsh-3d')
   assert.match(skills[0].content, /blender_status/u)
   assert.equal(skills[0].resourceBase.kind, 'directory')
   assert.equal(skills.some((skill) => skill.name === 'wireframe-to-3d'), true)

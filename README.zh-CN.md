@@ -1,147 +1,70 @@
-# dsh-blender
+# DSH 3D
 
 [English](README.md)
 
-[![awesome · DSH plugin](https://awesome-dsh-plugin.com/badge.svg)](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin)
+面向 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的 Blender 建模与参考图像三维重建插件。
 
-一个可安装到 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的完整 Blender 3D 生产插件。它以 `create-3d-model-skill` 为蓝本，注册 1 个总编排 Skill、29 个可直接加载的领域 Skill、26 个受控分析/验证 Helper，以及 13 个可实际执行的 Blender 工具。
+项目基于 [CheshireJCat/blender](https://github.com/CheshireJCat/blender) 的 `dsh-blender` 0.2.3 开发，起点提交为 `9bd95e97a61096cfae1edb0f88fcd2be54b0adee`；保留上游 Git 历史、许可、工具、skills 和分析脚本。
 
-## 示例输出
+## 当前进展
 
-![dsh-blender 生成的无相机台灯预览](assets/dsh-blender-lamp-preview.png)
+项目处于开发基线阶段。当前新增内容是独立插件身份、本地安装方式、中英文界面名称和项目文档；图像重建能力的进一步扩展将基于这一版本开展。
 
-这张无相机预览来自一次真实的 `dsh-blender` 安装冒烟测试。
+继承的现有能力包括：
 
-## 提供的能力
+- 13 个 Blender 工具，覆盖场景检查、Python 建模、导入、预览、渲染、导出和验证。
+- 30 个 skills，覆盖建模、参考图重建、材质、灯光、动画和产物交付。
+- 26 个分析与验证 helper，默认启用其中 23 个。
 
-- `blender_status`：检查 Blender、图像分析 Python、30 个 Skill、Helper 和当前 workspace。
-- `blender_scene_info` / `blender_object_info`：只读检查场景及对象级世界包围盒、求值后拓扑、UV、材质、约束、形态键和动画。
-- `blender_import`：把 GLB/glTF、FBX、OBJ、STL、USD、PLY 或 DAE 导入干净场景并保存版本化 `.blend`。
-- `blender_python`：执行小段 `bpy`/`bmesh` 建模代码并保存版本化 `.blend`。
-- `blender_preview`：不依赖已有相机，以等距/前后左右/顶底视角生成临时灯光预览，不修改源文件。
-- `blender_render` / `blender_render_frames`：生成单帧或动画代表帧的 PNG/JPEG 视觉证据。
-- `blender_export`：导出 GLB/glTF、FBX、OBJ、STL、USD 或 PLY。
-- `blender_validate_scene` / `blender_validate_export`：按通用、Web、3D 打印或动画目标审计场景，并通过干净进程回读导出物。
-- `blender_helper_catalog` / `blender_helper_run`：发现并执行全部 26 个参考图、线框、轮廓、多视图、UV、贴图、外观、修复与动画 QA Helper。
-- 30 个 Skill：`create-3d-model` 负责总编排，其余模块（例如 `blender-modeling`、`reference-to-3d`、`wireframe-to-3d`、`blender-animation`）可由 DSH 直接加载。
+本地已在 macOS ARM64、dsh `0.2.1-alpha.2`、Blender `5.2.2 LTS` 下验证插件加载、立方体创建、渲染、GLB 导出与干净回读，以及图像分析 helper。[上游兼容性报告](docs/compatibility-v0.2.3.md) 另行保留原项目的历史验证记录。
 
-插件直接启动 Blender 后台进程，不要求安装 BlenderMCP 插件，也不会开放控制端口。
+## 从源码安装
 
-## 环境要求
+环境要求：Node.js 22.12+、pnpm、可执行的 Blender，以及用于图像分析的 Python 3.10+。
 
-- DeepSeek Harness `0.2.0-rc.2`、`0.2.1-alpha.1` 或 `0.2.1-alpha.2`
-- Node.js 22.12+
-- Blender 4.3+；当前实现已面向 Blender 5.x API 适配
-- `blender` 在 `PATH` 中，或在 `cordis.patch.yml` 中配置绝对路径
-
-参考图、线框和视觉度量 Helper 还需要 Python 3.10+。本仓库提供一次性安装命令：
-
-```bash
-pnpm setup:analysis
+```sh
+git clone https://github.com/OOOHS/dsh-3d.git
+cd dsh-3d
+pnpm install --frozen-lockfile
+npx @deepseek-ai/dsh@0.2.1-alpha.2 plugin --profile web add .
+npx @deepseek-ai/dsh@0.2.1-alpha.2 plugin --profile web exec dsh-3d-setup
+npx @deepseek-ai/dsh@0.2.1-alpha.2 web
 ```
 
-它只会在插件目录创建被 Git 忽略的 `.venv`，并安装 OpenCV、NumPy、Pillow 和 SciPy。也可以把 `analysisPythonExecutable` 指向已有环境。
+插件页显示为 **DSH 3D（开发版）**。与原版 `dsh-blender` 切换使用时，先关闭当前版本，再开启另一个版本，每次启用其中一个。
 
-## 兼容性验证
-
-逐版本 DSH 兼容矩阵与一次性 Profile 安装、启动、卸载结果见 [v0.2.3 验证报告](docs/compatibility-v0.2.3.md)。报告区分作者验证与 DSH STORE 上架状态；回滚及 macOS 以外的平台尚未验证。
-
-## 从 npm 安装
-
-```bash
-npx @deepseek-ai/dsh plugin --profile web add dsh-blender
-npx @deepseek-ai/dsh plugin --profile web exec dsh-blender-setup
-npx @deepseek-ai/dsh --profile web --dump-config
-npx @deepseek-ai/dsh web
-```
-
-`dsh-blender-setup` 会在已安装的插件目录创建私有 `.venv`，并安装 OpenCV、NumPy、Pillow 和 SciPy。只有在完全不需要参考图、线框、多视图、贴图或动画分析 Helper 时才建议跳过。
-
-也可以固定安装 GitHub Release：
-
-```bash
-npx @deepseek-ai/dsh plugin --profile web add github:CheshireJCat/blender#v0.2.3
-```
-
-## 从源码开发
-
-在本仓库根目录执行：
-
-```bash
-npx @deepseek-ai/dsh plugin --profile web add .
-npx @deepseek-ai/dsh --profile web --dump-config
-```
-
-然后重启 Web UI：
-
-```bash
-npx @deepseek-ai/dsh web
-```
-
-打开 [http://127.0.0.1:3080](http://127.0.0.1:3080)。新建以本仓库或你的建模目录为 workspace 的会话，然后输入：
-
-```text
-使用 create-3d-model 创建一个低多边形台灯。
-先调用 blender_status，粗模和最终版本分别保存并渲染验收，
-最后导出 GLB，同时保留版本化 .blend 源文件。
-```
-
-## 一次性 headless 验证
-
-```bash
-npx @deepseek-ai/dsh plugin --profile headless add .
-npx @deepseek-ai/dsh --profile headless \
-  "使用 create-3d-model 在 artifacts 下创建一个低多边形蓝色立方体，渲染预览并导出 GLB。"
-```
-
-## 配置
-
-组合包的默认配置位于 `cordis.patch.yml`：
+Blender 可在 PATH 中提供，也可在 web profile 的 `cordis.patch.yml` 中配置绝对路径：
 
 ```yaml
-config:
-  blenderExecutable: blender
-  analysisPythonExecutable: ''
-  timeoutMs: 180000
-  helperTimeoutMs: 120000
-  maxOutputChars: 20000
-  restrictToWorkspace: true
-  enablePython: true
-  enableHelpers: true
-  enableMaintenanceHelpers: false
-  registerSkill: true
-  registerModuleSkills: true
+- id: dsh-3d
+  config:
+    blenderExecutable: /absolute/path/to/blender
 ```
 
-- `restrictToWorkspace: true`：默认要求所有输入和输出都位于当前 dsh 会话 workspace 内，并检查已有符号链接的真实目标。
-- `enablePython: false`：可以关闭能力最强、风险也最高的 `blender_python`，保留检查、渲染和导出工具。
-- `enableHelpers: false`：关闭 Helper 目录和执行工具；基础 Blender 生产工具不受影响。
-- `enableMaintenanceHelpers: false`：默认禁止 Skill 发布/清理类维护脚本；建模和验收 Helper 仍然可用。
-- `registerModuleSkills: false`：只注册总编排 Skill，不注册 29 个领域 Skill。
-- `registerSkill: false`：只注册工具，不向 DSH Skill 目录贡献任何 Blender Skill。
+模型服务与 API Key 通过 dsh 环境或配置提供，密钥与本机 `.env` 文件应保存在版本控制之外。
 
-## 安全边界
+## 开发检查
 
-`blender_python` 与在 Blender 内运行本地 Python 具有相同权限。它仅应处理可信的建模代码；不要用它下载资源、访问凭据、安装包、启动无关进程或修改 Blender 全局偏好。插件默认：
-
-- 禁用 `.blend` 内嵌脚本自动执行；
-- 限制模型文件、渲染和导出路径到会话 workspace；
-- 默认拒绝覆盖已有文件；
-- 每次调用使用独立 Blender 后台进程；
-- 完成后清理内部临时脚本和 JSON 文件。
-
-## 开发验证
-
-```bash
-pnpm install
-pnpm setup:analysis
+```sh
 pnpm validate
 pnpm test
-pnpm test:blender
 ```
 
-`test:blender` 会真实启动 Blender，创建与导入 `.blend`、执行对象检查和场景审计、生成相机预览与正式渲染、导出 GLB，并在干净 Blender 进程中回读验证。
+可选的本机集成检查：
 
-## 来源与许可
+```sh
+pnpm setup:analysis
+RUN_BLENDER_TESTS=1 pnpm test
+RUN_HELPER_TESTS=1 pnpm test
+```
 
-插件使用 MIT License。建模 Skill 来源、二次适配说明和上游许可保留在 `NOTICE`、`skills/create-3d-model/LICENSE`、`skills/create-3d-model/UPSTREAM_LICENSE` 与 `skills/create-3d-model/references/upstream.md`。
+插件通过本机 Blender 后台进程执行操作。Python 建模代码使用本地 Blender 进程的权限，工作区输出限制与验证行为沿用上游实现。
+
+## 致谢与许可
+
+- [CheshireJCat/blender](https://github.com/CheshireJCat/blender)：插件基础、Blender 执行桥接、工具、skills、分析脚本与验证能力。
+- [CheshireJCat/blender-modeling-skill](https://github.com/CheshireJCat/blender-modeling-skill) 与 [RobLe3/cc-blender-skill](https://github.com/RobLe3/cc-blender-skill)：随插件提供的建模 skills 及模块的来源。
+- [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)：agent 运行环境与插件系统。
+- [Blender](https://www.blender.org/)：插件使用的三维创作软件。
+
+插件代码保留上游 [MIT 许可](LICENSE)，其他来源说明及保留的许可文件见 [NOTICE](NOTICE) 与 `skills/create-3d-model/`。Blender 是使用其自身许可的独立项目；DSH 3D 是社区开发项目。

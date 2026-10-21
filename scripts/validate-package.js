@@ -31,11 +31,11 @@ const required = [
 for (const path of required) assert.equal(existsSync(join(root, path)), true, `missing ${path}`)
 
 const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
-assert.equal(manifest.name, 'dsh-blender')
+assert.equal(manifest.name, 'dsh-3d')
 assert.equal(manifest.dsh.bundle.patch, './cordis.patch.yml')
 assert.equal(manifest.type, 'module')
-assert.equal(manifest.repository.url, 'git+https://github.com/CheshireJCat/blender.git')
-assert.equal(manifest.bin['dsh-blender-setup'], 'scripts/setup-analysis.js')
+assert.equal(manifest.repository.url, 'git+https://github.com/OOOHS/dsh-3d.git')
+assert.equal(manifest.bin['dsh-3d-setup'], 'scripts/setup-analysis.js')
 assert.equal(manifest.publishConfig.access, 'public')
 assert.equal(manifest.peerDependencies['@deepseek-ai/dsh-tools'], '^0.1.0-rc.6 || ^0.2.0-rc.2 || ^0.2.1-alpha.1')
 assert.equal(manifest.peerDependenciesMeta['@deepseek-ai/dsh-tools'].optional, true)
@@ -71,6 +71,6 @@ for (const helper of HELPER_CATALOG) {
 }
 
 const patch = readFileSync(join(root, 'cordis.patch.yml'), 'utf8')
-assert.match(patch, /name: dsh-blender/u)
+assert.match(patch, /name: dsh-3d/u)
 
-console.log(`validated dsh-blender ${manifest.version}: ${modules.length + 1} skills, ${helperScripts.length} helpers, required files present`)
+console.log(`validated ${manifest.name} ${manifest.version}: ${modules.length + 1} skills, ${helperScripts.length} helpers, required files present`)

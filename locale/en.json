@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "DSH 3D (Development)",
+    "description": "Blender modeling and image reconstruction for DeepSeek Harness. Based on CheshireJCat/blender. Enable one Blender plugin version at a time."
+  }
+}

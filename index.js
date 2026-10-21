@@ -10,7 +10,7 @@ import Schema from '@deepseek-ai/schemastery'
 
 import { HELPER_BY_NAME, HELPER_CATALOG } from './lib/helper-catalog.js'
 
-export const name = 'blender-modeling'
+export const name = 'dsh-3d'
 export const inject = ['tools', 'skills']
 
 export const Config = Schema.object({
@@ -96,7 +96,7 @@ function registerSkills(ctx, config) {
   ctx.skills.register({
     ...top,
     source: 'bundled',
-    provider: 'dsh-blender',
+    provider: 'dsh-3d',
     resourceBase: { kind: 'directory', path: SKILL_ROOT },
   })
   if (!config.registerModuleSkills) return
@@ -111,7 +111,7 @@ function registerSkills(ctx, config) {
       ...definition,
       content: `${MODULE_RUNTIME_PREAMBLE.replace('<this skill name>', definition.name)}\n\n${definition.content}`,
       source: 'bundled',
-      provider: 'dsh-blender',
+      provider: 'dsh-3d',
       resourceBase: { kind: 'directory', path: moduleDirectory },
     })
   }
