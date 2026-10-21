@@ -22,13 +22,13 @@ Load a module through DSH's `skill` tool using the module name in the tables bel
 | `quality-refinement-autoloop` | A result is repeatedly subpar and evidence must be converted into a repair plan. Do not perform its skill/release mutations without an explicit request. |
 | `mascot-logo-reconstruction` | A brand mascot, logo, flat character, or emblem must be reconstructed through fail-gated source matching. |
 
-The top-level `create-3d-model` orchestrator plus these four modules provide the control plane for the other domains.
+Use `create-3d-model` for the shared tool and review contract. The modules below are optional technique references; select them according to the task.
 
 ## Core Blender domains
 
 | Module | Capability |
 | --- | --- |
-| `blender-modeling` | Primitives, direct mesh work, hard-surface modeling, modifiers, `bmesh`, topology, axes, and structural validation. |
+| `blender-modeling` | Native sculpt brushes, primitives, mesh edits, curves, modifiers, `bmesh`, topology and structural validation. |
 | `blender-materials` | Principled PBR, metal, glass, plastic, fabric, skin/wax, procedural wood/marble/weave, and Blender 5 socket compatibility. |
 | `blender-lighting` | Subject-aware three-point, studio, cinematic, practical, HDRI, outdoor, color-temperature, and shadow setups. |
 | `blender-cameras` | Focal length, composition, depth of field, tracking, orbit, dolly, push-in, and animated camera work. |
@@ -66,7 +66,7 @@ Load these only when source fidelity matters more than plausible freeform modeli
 | `orbital-hud-motion` | Source-derived halo, orbit, dot, dash, scanner, parallax, and restrained HUD motion. |
 | `animation-quality-gate` | Contact-sheet validation for flicker, silhouette stability, framing, subject dominance, layer separation, and export truth. |
 
-## Recommended pipelines
+## Optional module combinations
 
 ### Text or image to a general 3D model or hero render
 

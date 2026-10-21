@@ -2,6 +2,14 @@
 
 This file owns the runtime mapping between the reusable modeling workflow and the `dsh-3d` plugin. When a vendored module mentions BlenderMCP, a fixed MCP tool name, Codex, Claude, or an external control port, translate it to the tools and rules below.
 
+## Modeling and completion policy
+
+Native sculpting, mesh editing, modifiers, curves, Geometry Nodes and Python are equal available methods. Select and combine them according to the target form and visual feedback. Inherited recipes and phase sequences are optional references. Scene checkpoints, images and review reports document state without requiring code-only reconstruction.
+
+Image reconstruction completion requires `review_reconstruction` to return `status: "reviewed"` and `approved: true` for the current final `.blend` and renders. Supply `reference_path`, 1–6 `render_paths`, optional `render_views`, and final `blend_path`; use the closest reference view first, followed by useful alternate views. The reviewer receives only evidence images and a fixed rubric in a fresh context. Reports contain `same`, `approved`, confidence, concrete differences, model route, input hashes and artifact hash. A failure or rejection leaves the task incomplete; preserve the report and repair the visible issues. After any artifact change, render and review again. User-requested interruption or genuine limits should be reported as incomplete with saved progress.
+
+Reference images explicitly supplied outside the workspace can be read with ordinary dsh file tools and copied into `inputs/` before calling workspace-scoped tools. Preserve original inputs.
+
 ## Runtime shape
 
 DeepSeek Harness discovers 30 runtime skills: `create-3d-model` plus all 29 routed domain modules. Use the top-level skill for orchestration, select the smallest module set from `references/capability-map.md`, and load each selected module with DSH's `skill` tool.
@@ -24,6 +32,7 @@ The plugin exposes these model-facing tools:
 | `blender_helper_catalog` | Discover all deterministic reference/reconstruction/QA helpers and exact arguments | none |
 | `blender_sculpt` | Persistent native brush session: begin, stroke, undo/redo, status, commit/discard | in-memory mesh; commit creates `.blend` |
 | `blender_view` | Live sculpt image, standard views, orbit, zoom, pan and framing | view state only |
+| `review_reconstruction` | Independent model comparison of reference and renders; approval gates completion | creates a hashed review report |
 | `blender_helper_run` | Run one whitelisted helper inside the workspace | creates declared reports/images/recipes |
 
 The ordinary dsh `read`, `read_image`, file-search, and shell tools remain available for reference analysis and helper scripts. Use `read_image` after every significant render; the existence of a render file is not visual evidence by itself.
@@ -43,8 +52,8 @@ Tool paths resolve against `exec.agent.session.header.cwd`, the workspace attach
 
 1. Call `blender_status`.
 2. If editing an existing `.blend`, call `blender_scene_info` and `blender_object_info` before the first write. If editing another supported 3D format, call `blender_import` first.
-3. Load the smallest relevant skills and plan names, units, axes, collection ownership, save paths, and validation views.
-4. Use `blender_python` for one small, deterministic phase at a time. The script namespace already provides `bpy`, `bmesh`, `mathutils`, `workspace`, `input_path`, and `output_path`. Set `dsh_result` to a JSON-safe dictionary when compact phase evidence is useful.
+3. Choose useful native methods and load relevant domain references as needed.
+4. Use native sculpting, mesh operations, curves, modifiers or Python according to the shape. The script namespace already provides `bpy`, `bmesh`, `mathutils`, `workspace`, `input_path`, and `output_path`. Set `dsh_result` to a JSON-safe dictionary when compact phase evidence is useful.
 5. Call `blender_scene_info`, `blender_object_info`, and `blender_validate_scene` on checkpoints for structural confirmation.
 6. Use `blender_preview` for blockout/axis evidence or `blender_render` for the authored camera. For animation use `blender_render_frames`. Always inspect images with `read_image`.
 7. For source-locked work, discover the owning module's deterministic helper through `blender_helper_catalog`, run it with `blender_helper_run`, and inspect generated masks/overlays/contact sheets.

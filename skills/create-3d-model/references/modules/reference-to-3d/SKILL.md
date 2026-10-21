@@ -7,142 +7,25 @@ allowed-tools: Read Bash Glob Grep blender_python blender_scene_info blender_sce
 
 # Reference-to-3D Reconstruction
 
-This skill is for **source-locked modeling**: the reference asset is the contract. Do not generate a plausible object from memory and then decorate it. Extract measurements, part counts, silhouettes, and UV regions from the supplied files first, then build the Blender model to satisfy those measurements.
+Inspect the actual source images and reconstruct the visible subject using whichever native Blender methods suit its form: mesh editing, sculpt brushes, curves, modifiers, Geometry Nodes or Python. Match silhouette, proportion, landmarks, expression and characteristic details. Use coherent depth and hidden-surface assumptions for single-image inputs.
 
-## 1:1 reconstruction upgrade
+## Useful evidence and methods
 
-When the user requires true 1:1 matching, chain these skills instead of attempting another plausible modeling pass:
+- Read the reference first. Record important shapes, part relationships, colors and uncertainty at a level useful for the task.
+- For organic shapes, prepare a suitable base mesh and use `blender_sculpt` repeatedly with `blender_view` feedback. Direct mesh edits and curve construction can complement brush work.
+- For silhouettes, technical drawings or flat logo elements, optional contour extraction and `contour-to-mesh` examples can provide a starting form. Choose a suitable volume and topology for the actual subject.
+- Optional local helpers include `template-analyzer` and `silhouette-validator`; discover their exact names and arguments through `blender_helper_catalog({ module: "reference-to-3d" })`. Measurements support visual inspection.
+- Use orthographic registration when multiple corresponding references are supplied. Document conflicts and unseen-surface assumptions.
+- Use atlas/UV helpers when the supplied inputs include a texture atlas. Use authored materials, native geometry or other appropriate methods for ordinary image references.
+- Hide reference images/planes and helper overlays in acceptance renders. Render a comparable reference view and useful alternate views that reveal the actual geometry.
 
-1. `reference-analysis-validator` for manifest, masks, part counts, overlay gates.
-2. `orthographic-registration` for front/side/back/top coordinate agreement.
-3. `contour-to-mesh` for silhouette-derived structural meshes.
-4. `atlas-uv-fitting` for per-part texture/UV fitting.
-5. `mascot-logo-reconstruction` as the full orchestrator for brand mascot/logo work.
+## Completion
 
-Do not export a final asset until the validation JSON and overlay render pass the manifest thresholds.
+Save the current editable .blend and genuine model renders, then call `review_reconstruction` with the reference, render paths/view labels and final `blend_path`. Completion requires its successful `approved: true` result for the unchanged final artifacts. Correct important reviewer differences and review again; preserve failed reports and saved progress when a real limit prevents completion. Validate requested exports separately.
 
-## Triggered failure mode
+## Optional Blender code examples
 
-If the user says the output does not match the templates/textures/wireframes, stop regular `create-3d-model` generation and enter this workflow. Repeated plausible-but-wrong renders usually mean the missing step is **reference analysis**, not another modeling iteration.
 
-## Source-of-truth hierarchy
-
-1. **Front template / front wireframe**: primary silhouette, visible part count, face/feature positions, brand read.
-2. **Texture atlas**: exact part shapes, color/material boundaries, decals, lightmap/aura intent.
-3. **Side/back/top views**: depth, stacking order, thickness, backside forms. They must not change the locked front projection.
-4. **User feedback**: hard constraints; promote it into validation gates.
-
-## Mandatory preflight checklist
-
-Before Blender modeling, write a small `reference_manifest.json` with:
-
-```json
-{
-  "source_files": [],
-  "primary_view": "front",
-  "expected_primary_parts": {"count": null, "labels": []},
-  "structural_parts": [],
-  "decorative_parts": [],
-  "texture_regions": [],
-  "validation_thresholds": {
-    "front_mask_iou_min": 0.90,
-    "bbox_center_tolerance_px": 12,
-    "part_count_exact": true
-  }
-}
-```
-
-If the expected part count is unclear, derive it from the reference sheet with the analyzer and show the user the uncertainty instead of guessing.
-
-## Pipeline
-
-### 1. Inventory and classify sources
-
-Classify each provided asset:
-
-- `front_template`: hero brand image or front wireframe.
-- `side_view`, `back_view`, `top_view`: orthographic depth references.
-- `texture_atlas`: basecolor / albedo atlas containing pieces.
-- `decal`: transparent face/expression or detail layer.
-- `emissive`, `roughness`, `bump`, `normal`, `lightmap`: material maps.
-- `aura/background`: optional visual context, not structural body geometry.
-
-### 2. Analyze images locally
-
-Use `scripts/template_analyzer.py` for first-pass component extraction:
-
-```bash
-python3 /absolute/path/to/create-3d-model/references/modules/reference-to-3d/scripts/template_analyzer.py \
-  --image /absolute/workspace/path/front_reference.png \
-  --out /absolute/workspace/path/front_analysis.json \
-  --mode edges  # use bright_on_dark/dark_on_bright/alpha when cleaner
-```
-
-The analyzer returns components with area, perimeter-derived score, bbox, centroid, contour, and approximate class hints. Use `--mode edges` for faint grey wireframes and Otsu modes for clean masks/atlases. Treat this as measurement input, not final authority.
-
-### 3. Lock the front reference in Blender
-
-Create a front reference plane or Image Empty in the same orthographic camera used for validation. Prefix it `REF_` and exclude it from export. Official Blender docs describe Image Empties as reference images/blueprints and support front/back depth, opacity, orthographic-only display, and axis-aligned display.
-
-### 4. Build geometry from source contours
-
-For each structural part:
-
-1. Convert the 2D contour to front-view X/Z coordinates.
-2. Generate a quad strip/grid inside that contour.
-3. Assign Project-from-View-style UVs based on front X/Z bounds or exact atlas region.
-4. Add only shallow Y-depth/crown/extrusion after the front silhouette is locked.
-5. Keep part names semantic: `GEO-subject_part_top`, `GEO-subject_face_shell`, etc.
-
-Do not radial-duplicate a mascot unless the reference is truly radial. Logos often have occlusion, intentional asymmetry, and a fixed visible part count.
-
-### 5. Multi-view registration
-
-- Front X/Z is locked first.
-- Side view controls Y/Z depth envelope only.
-- Top view controls X/Y spread only.
-- Back view controls hidden/backside geometry and validation, not front silhouette.
-
-If views disagree, keep the front brand read and document the conflict.
-
-### 6. UV and texture mapping
-
-Chain-load `blender-uv-texturing` when any texture pack is provided. For atlas-driven parts:
-
-- crop or map per atlas region; do not project the whole atlas onto every part;
-- front-facing hero surfaces use front-projected UVs;
-- side/back surfaces use side/back UV islands, procedural fill, or baked colors;
-- alpha decals need transparent material settings and must not introduce black planes;
-- lightmaps are optional realtime helpers and should not be connected as emission unless specified.
-
-### 7. Validation gates before export
-
-Always produce:
-
-- `front_preview.png`
-- `front_overlay_reference.png`
-- `front_mask_validation.json`
-- `side_preview.png`
-- `back_preview.png`
-- `top_preview.png`
-
-Use `scripts/silhouette_validator.py`:
-
-```bash
-python3 /absolute/path/to/create-3d-model/references/modules/reference-to-3d/scripts/silhouette_validator.py \
-  --reference /absolute/workspace/path/reference_mask.png \
-  --render /absolute/workspace/path/render_mask.png \
-  --out /absolute/workspace/path/validation.json
-```
-
-Refuse final export if:
-
-- primary part count differs from manifest;
-- front-mask IoU is below threshold;
-- face/feature centroid is outside tolerance;
-- optional aura/decorations are included in the base GLB by mistake.
-
-## Blender code patterns
 
 ### Reference plane in front-view X/Z
 

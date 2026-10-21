@@ -7,7 +7,7 @@ allowed-tools: Read Bash blender_python blender_scene_info blender_sculpt blende
 
 # Blender Modeling
 
-Create geometry in Blender via natural language. Emit small Python chunks through `blender_python`; the patterns below cover the common 80%.
+Create and refine geometry using native brushes, mesh edits, curves, modifiers, Geometry Nodes and Python. Select methods from the target shape and visual feedback. The Python recipes below are optional examples.
 
 ## Decision tree
 
@@ -17,8 +17,8 @@ What kind of geometry?
 │   → Cube primitive + Bevel + SubSurf modifier stack
 │   → See "Hard-surface stack" recipe
 │
-├── Organic (characters, creatures, plants — block-out only)
-│   → Ico Sphere + sculpting (or Voxel Remesh for shape)
+├── Organic (characters, creatures, plants)
+│   → Base mesh + repeated native sculpting; prepare topology when needed
 │   → Use blender_sculpt for native brush strokes; blender_view returns live images
 │
 ├── Architectural / repeating (fences, columns, tile)
@@ -38,7 +38,7 @@ What kind of geometry?
     → See "Block-out scene" recipe
 ```
 
-## Code-execution rules (recap)
+## Python-specific execution notes
 
 - Each `blender_python` call gets a fresh Python namespace. Re-import everything; identify objects by `bpy.data.objects['name']`.
 - Always name objects with `GEO-` prefix. Never leave `Cube.027`.

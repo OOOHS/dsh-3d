@@ -12,7 +12,7 @@ The development version adds persistent native sculpting and live viewport feedb
 
 Current capabilities include:
 
-- 15 Blender tools: the 13 upstream tools plus `blender_sculpt` and `blender_view`.
+- 16 tools: the 13 upstream Blender tools, `blender_sculpt`, `blender_view`, and independent `review_reconstruction`.
 - 30 skills covering modeling, reference-image reconstruction, materials, lighting, animation, and artifact handoff.
 - 26 analysis and validation helpers, with 23 enabled by default.
 
@@ -42,6 +42,20 @@ For a custom Blender executable, add the following to your web profile's `cordis
 ```
 
 Model-provider credentials belong in your dsh environment or configuration. Keep API keys and local `.env` files outside version control.
+
+## Independent visual review
+
+`review_reconstruction` sends a reference and 1–6 genuine model renders to a fresh vision-model context. It returns `same`, `approved`, confidence and specific differences, and saves a report containing the reviewer route, fixed rubric, raw response, image hashes and optional `.blend` hash. A successful review of current final artifacts is required by the reconstruction skill before completion; errors, uncertain verdicts and major defects leave the task incomplete.
+
+The default route is `deepseek-official / deepseek-flash`, using the configured DeepSeek credentials with an independent context. Set `reviewProvider` and `reviewModel` to another configured vision-capable route when desired. Review requests send the supplied evidence images to that provider and use its normal API billing. `reviewTimeoutMs` defaults to 180000 and `reviewMaxOutputTokens` to 8192. The route and rubric are controlled by plugin configuration, outside the modeling agent's tool arguments.
+
+Example tool input:
+
+```json
+{"reference_path":"inputs/reference.jpg","render_paths":["artifacts/front.png","artifacts/side.png","artifacts/back.png"],"render_views":["reference-aligned","side","back"],"blend_path":"artifacts/model-v003.blend","report_path":"artifacts/review-v003.json"}
+```
+
+Modeling guidance treats native brushes, mesh operations, curves, modifiers, Geometry Nodes and Python as available techniques. Inherited recipes are optional references; scene checkpoints and visual acceptance document the result.
 
 ## Native sculpting
 

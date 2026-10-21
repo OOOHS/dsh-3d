@@ -7,13 +7,13 @@ allowed-tools: Read Bash blender_python blender_scene_info blender_scene_info
 
 # Blender Pro Workflow
 
-End-to-end guidance for putting a real scene together. This skill answers "in what order, with what fidelity at each step, should I tackle this?" Use it as the planner, then chain-load the specific sub-skills for each step.
+End-to-end guidance for putting a real scene together. This skill answers "in what order, with what fidelity at each step, should I tackle this?" Use these sequences as optional planning references alongside native tool feedback.
 
 ## Reference-locked override
 
 If a task involves source templates, orthographic references, brand mascots, or fit validation, defer ordering to `blender-skill-harmonizer` and the reference-locked skills. The generic production order is subordinate to source-of-truth gates.
 
-## The 11-step canonical order
+## One possible production order
 
 ```
 1.  Reference + plan          → State the goal; collect refs
@@ -29,7 +29,7 @@ If a task involves source templates, orthographic references, brand mascots, or 
 11. Export                    → Target platform format
 ```
 
-**Why this order**: each step gates the next. A great model under bad lighting renders worse than a mediocre model under great lighting. A perfect material tuned in flat lighting will look wrong once real lighting goes in.
+**Use selectively**: choose the sequence from the task and visual feedback; native sculpting is available throughout. A great model under bad lighting renders worse than a mediocre model under great lighting. A perfect material tuned in flat lighting will look wrong once real lighting goes in.
 
 ## Sub-skill chain by request type
 

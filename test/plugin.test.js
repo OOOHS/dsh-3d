@@ -44,6 +44,7 @@ test('registers the complete skill stack and Blender production tools', () => {
     'blender_helper_run',
     'blender_sculpt',
     'blender_view',
+    'review_reconstruction',
   ])
   assert.equal(skills.length, 30)
   assert.equal(skills[0].name, 'create-3d-model')

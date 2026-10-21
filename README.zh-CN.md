@@ -12,7 +12,7 @@
 
 当前能力包括：
 
-- 15 个 Blender 工具：上游的 13 个工具，加上 `blender_sculpt` 和 `blender_view`。
+- 16 个工具：上游的 13 个 Blender 工具，加上 `blender_sculpt`、`blender_view` 和独立的 `review_reconstruction`。
 - 30 个 skills，覆盖建模、参考图重建、材质、灯光、动画和产物交付。
 - 26 个分析与验证 helper，默认启用其中 23 个。
 
@@ -42,6 +42,20 @@ Blender 可在 PATH 中提供，也可在 web profile 的 `cordis.patch.yml` 中
 ```
 
 模型服务与 API Key 通过 dsh 环境或配置提供，密钥与本机 `.env` 文件应保存在版本控制之外。
+
+## 独立视觉评审
+
+`review_reconstruction` 把参考图和 1～6 张真实模型渲染交给独立上下文的视觉模型，返回 `same`、`approved`、置信度和具体差异，并保存包含模型路由、固定评审标准、原始回复、图片哈希及可选 `.blend` 哈希的报告。重建 skill 要求当前最终产物获得评审通过，才可宣告完成；评审错误、证据不确定或存在主要差异时，任务仍处于未完成状态。
+
+默认使用已配置的 `deepseek-official / deepseek-flash`，通过独立上下文评审。配置 `reviewProvider` 和 `reviewModel` 可选择其他已接入且支持图像的模型。评审会向所选服务发送证据图片，按该服务正常 API 规则计费。`reviewTimeoutMs` 默认 180000，`reviewMaxOutputTokens` 默认 8192。建模 agent 的工具参数负责提供证据，评审路由和评判标准由插件配置维护。
+
+工具输入示例：
+
+```json
+{"reference_path":"inputs/reference.jpg","render_paths":["artifacts/front.png","artifacts/side.png","artifacts/back.png"],"render_views":["reference-aligned","side","back"],"blend_path":"artifacts/model-v003.blend","report_path":"artifacts/review-v003.json"}
+```
+
+建模说明允许自由组合原生笔刷、网格编辑、曲线、修改器、Geometry Nodes 和 Python；上游配方作为可选参考，通过工程快照和视觉验收记录结果。
 
 ## 连续雕刻
 

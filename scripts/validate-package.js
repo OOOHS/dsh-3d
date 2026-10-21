@@ -17,6 +17,7 @@ const required = [
   'scripts/setup-analysis.js',
   'lib/helper-catalog.js',
   'lib/sculpt-session.js',
+  'lib/reconstruction-review.js',
   'scripts/dsh_sculpt_worker.py',
   'requirements-analysis.txt',
   'README.md',

@@ -10,7 +10,7 @@
 
 ## Evidence requirements
 
-Visual work is complete only after the dsh agent inspects an actual image of the result.
+Image reconstruction is complete after actual render inspection and a successful independent `review_reconstruction` approval for the current final .blend and renders.
 
 Use at least these two checkpoints:
 
@@ -63,6 +63,10 @@ For reference matching, inspect side-by-side at comparable framing. When exact m
 Do not compensate for geometry errors with camera tricks or hide shading errors with darkness. Fix upstream causes before downstream presentation.
 
 When iteration stalls, report the evidence, attempted corrections, and the remaining limitation rather than claiming completion.
+
+## Independent model review
+
+Submit the reference and genuine current model renders to `review_reconstruction`, including the final `blend_path`. The first render should match the reference viewpoint; alternate views reveal volume and connections. Read `same`, `approved`, confidence and differences. Approval requires the model's acceptance and the tool's evidence checks. A missing/error/rejected review leaves the reconstruction incomplete. Repair the important differences, save a new version, render and review again. Preserve reports and exact artifacts; subsequent modifications require a new review.
 
 ## Completion report
 

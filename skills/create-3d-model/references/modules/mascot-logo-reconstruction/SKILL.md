@@ -7,51 +7,17 @@ allowed-tools: Read Bash Glob Grep blender_python blender_scene_info blender_sce
 
 # Mascot / Logo Reconstruction
 
-This is the top-level skill for 1:1 brand mascot reconstruction. It chains the specialized skills and enforces stop/go gates.
+Reconstruct designed characters, mascots and logos from the supplied artwork. Preserve their identifying silhouette, proportions, expression, hair/clothing, colors and appendages. Read actual occlusion and asymmetry from the source.
 
-## Harmonization requirement
+## Native modeling choices
 
-For mascot/logo work, use `blender-skill-harmonizer` first when multiple source types or validation failures are present. It sets canonical source policy and prevents conflicts between reconstruction, UV, fit-repair, lighting, export, and animation skills.
+For volumetric characters, choose mesh construction, native sculpting, curves, modifiers and Python as useful. Brush edits can establish primary forms and refine secondary detail. For flat designed elements, contour meshes and shallow extrusions are available options. Prepare sufficient topology and inspect alternate views for volume, connections and thickness.
 
-## Skill chain
+Optional segmentation, landmarks, registration, contour and UV helpers can support particular inputs. Use atlas tools when a texture pack exists; select related skills as references when needed. Modeling and repair choices follow visible evidence and the reconstruction goal.
 
-1. `reference-analysis-validator` — source inventory, manifest, part counts, masks.
-2. `orthographic-registration` — shared front/side/back/top coordinate contract.
-3. `contour-to-mesh` — structural meshes from measured silhouettes.
-4. `atlas-uv-fitting` — per-part texture/UV fitting.
-5. `blender-materials` / `blender-lighting` — only after geometry and UVs pass.
-6. `reference-analysis-validator` again — overlay gates before export.
-7. `blender-export` — export only after gates pass.
-8. `blender-animation` — only after static model is accepted.
+## Acceptance
 
-## Non-negotiable order
-
-Static reference fidelity comes before animation and beauty rendering.
-
-```
-measure → manifest → contour meshes → depth registration → UV fit → overlay validation → export → animation
-```
-
-## Hard gates
-
-- expected structural part count equals Blender scene/export structural part count.
-- front silhouette overlay passes threshold.
-- face/features landmarks pass tolerance.
-- side/back/top renders match their registered envelopes.
-- texture atlas regions are mapped per part.
-- optional aura/background is separated from base structural GLB.
-
-## Modeling guidance
-
-- Treat mascots/logos as designed symbols, not natural objects. Symmetry is not guaranteed.
-- Do not infer hidden leaves/petals from radial math.
-- Avoid primitive-first construction when a silhouette exists.
-- Use semantic object names and validation prints.
-
-## Source-manifest structural part invariant
-
-Create exactly the structural parts declared by the source manifest. Extra background arcs, glow, aura, shadows, guide marks, and decorative rings are context/decor unless the manifest explicitly promotes them to structural geometry.
-
+Keep editable model versions, genuine reference-aligned and alternate renders, and an independent `review_reconstruction` report. The current final artifacts require `approved: true` before completion. Use concrete reviewer differences to guide the next edit; rerender and review after changes. Structural/export validation complements visual acceptance.
 
 ## Front-plane rotation rule
 
@@ -59,14 +25,4 @@ In this Blender coordinate convention, the front camera looks along the Y axis a
 
 ## Output contract
 
-Every final reconstruction folder should include:
-
-- `reference_manifest.json`
-- `registration_report.json`
-- `atlas_regions.json`
-- `validation/front_mask_validation.json`
-- `validation/front_overlay_reference.png`
-- named `.blend`
-- base `.glb`
-- optional aura/context `.glb`
-- `BUILD_NOTES.md` with pass/fail gates
+Deliver the requested model format (GLB by default), its editable .blend, useful multi-view renders and the successful current review report. Add measurement, registration or texture reports when those techniques were used. Record genuine remaining limitations and any incomplete/rejected status.

@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.2.3-dev.2 - 2026-10-22
+
+- Add `review_reconstruction`: independent vision-model comparison of the reference and genuine renders, with explicit match/approval, concrete discrepancies and hashed audit reports.
+- Require successful review of current final artifacts before reconstruction completion. Malformed, failed, truncated, text-only or inconsistent reviewer responses cannot approve a result.
+- Treat native sculpting and other Blender methods as first-class choices. Simplify reconstruction guidance, remove code-reproducibility priorities and character primitive-only boundaries, and make inherited pipelines optional references.
+
 ## 0.2.3-dev.1 - 2026-10-21
 
 - Add `blender_sculpt`: conversation-owned, persistent native Draw/Grab/Smooth/Inflate editing, stroke undo/redo, explicit commit/discard, periodic recovery and a journal.

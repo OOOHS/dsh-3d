@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "DSH 3D (Development)",
-    "description": "Blender modeling and image reconstruction with persistent native sculpting, undo/redo and live view feedback. Based on CheshireJCat/blender. Enable one Blender plugin at a time."
+    "description": "Blender modeling and reconstruction with native sculpting, live views and independent visual review before completion. Based on CheshireJCat/blender."
   }
 }

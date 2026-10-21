@@ -28,14 +28,14 @@
 | Repeated structure | One clean module | Array, linked duplicates, Geometry Nodes when justified |
 | Thin shell or panel | Plane | Solidify, controlled bevel, explicit normals |
 | Symmetric object | Half mesh | Mirror with clipping and merge |
-| Organic form | Icosphere or simple primitives | Blockout only unless a sculpt/base-mesh workflow is authorized |
+| Organic form | Icosphere or simple primitives | Dense base mesh + native sculpt brushes; combine with direct mesh edits |
 | Precise custom topology | Minimal mesh | Direct data API or `bmesh` |
 
 Prefer the simplest representation that preserves the requested silhouette and downstream use. Do not add subdivision or dense topology merely to make a model appear sophisticated.
 
 ## Blockout and assembly order
 
-Use this sequence for a new asset or hero scene:
+One optional sequence for a new asset or hero scene:
 
 1. Record target dimensions and visual references.
 2. Create a primitive blockout at correct scale.
@@ -51,7 +51,7 @@ For an existing scene, change only affected stages and preserve unrelated object
 
 ## Blender Python execution pattern
 
-Use small, idempotent chunks and print machine-readable evidence:
+For Python operations, small scoped chunks with machine-readable evidence can simplify diagnosis:
 
 ```python
 import bpy

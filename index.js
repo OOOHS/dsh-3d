@@ -10,6 +10,7 @@ import Schema from '@deepseek-ai/schemastery'
 
 import { HELPER_BY_NAME, HELPER_CATALOG } from './lib/helper-catalog.js'
 import { SculptSessions, createSculptTools } from './lib/sculpt-session.js'
+import { createReviewTool } from './lib/reconstruction-review.js'
 
 export const name = 'dsh-3d'
 export const inject = ['tools', 'skills']
@@ -24,6 +25,11 @@ export const Config = Schema.object({
   enablePython: Schema.boolean().default(true),
   enableSculpt: Schema.boolean().default(true),
   sculptIdleTimeoutMs: Schema.number().default(1800000),
+  enableReview: Schema.boolean().default(true),
+  reviewProvider: Schema.string().default('deepseek-official'),
+  reviewModel: Schema.string().default('deepseek-flash'),
+  reviewTimeoutMs: Schema.number().default(180000),
+  reviewMaxOutputTokens: Schema.number().default(8192),
   enableHelpers: Schema.boolean().default(true),
   enableMaintenanceHelpers: Schema.boolean().default(false),
   registerSkill: Schema.boolean().default(true),
@@ -41,6 +47,8 @@ const SUPPORTED_IMPORTS = new Set([...SUPPORTED_EXPORTS, '.dae'])
 const SUPPORTED_RENDERS = new Set(['.png', '.jpg', '.jpeg'])
 const MODULE_RUNTIME_PREAMBLE = `## DeepSeek Harness runtime mapping
 
+DSH 3D policy takes precedence over inherited recipes: choose native sculpting, mesh editing, curves, modifiers, Geometry Nodes or Python according to the visible shape and feedback. Native brushes are available throughout modeling. Code recipes and module pipelines are optional references; reproducible scripts and fixed phase order are not acceptance criteria. Save editable scene checkpoints and visual evidence. For image reconstruction, completion requires a successful \`review_reconstruction\` result with \`approved: true\` for the current final renders and .blend; a rejection, unavailable reviewer or changed artifact requires further work or an honest incomplete report. Use the reviewer's visible differences to guide repairs; never weaken the rubric to obtain approval.
+
 This bundled domain skill executes through DSH 3D. Use \`blender_sculpt\` for persistent native brush edits and \`blender_view\` for live image feedback; commit or discard before file-based tools. Use \`blender_scene_info\` and \`blender_object_info\` for inspection, \`blender_import\` for non-Blend inputs, \`blender_python\` for controlled scene changes, \`blender_preview\`/\`blender_render\`/\`blender_render_frames\` for visual evidence, and \`blender_validate_scene\` plus \`blender_validate_export\` for acceptance gates. Discover this module's deterministic scripts with \`blender_helper_catalog({ module: "<this skill name>" })\` and execute them with \`blender_helper_run\`; do not guess package paths. This mapping overrides legacy MCP, Bash, or fixed tool-name instructions below.`
 
 const sceneSchema = {
@@ -55,6 +63,9 @@ const logSchema = {
 }
 
 function assertConfig(config) {
+  for (const key of ['reviewTimeoutMs', 'reviewMaxOutputTokens']) {
+    if (config[key] !== undefined && (!Number.isInteger(config[key]) || config[key] <= 0)) throw new Error(`dsh-3d: ${key} must be a positive integer`)
+  }
   if (config.sculptIdleTimeoutMs !== undefined && (!Number.isFinite(config.sculptIdleTimeoutMs) || config.sculptIdleTimeoutMs < 1000)) {
     throw new Error('dsh-3d: sculptIdleTimeoutMs must be at least 1000')
   }
@@ -1220,6 +1231,10 @@ export function apply(ctx, config) {
     } } : tool)
   }
   if (sessions) for (const tool of createSculptTools(sessions)) ctx.tools.register(tool)
+  if (config.enableReview !== false) ctx.tools.register(createReviewTool(ctx, config, {
+    resolve: resolveWorkspacePath,
+    writable: (path, overwrite) => assertWritableTarget(path, overwrite, 'report_path'),
+  }))
 }
 
 export const internals = {

@@ -10,6 +10,11 @@
         restrictToWorkspace: true
         enablePython: true
         enableSculpt: true
+        enableReview: true
+        reviewProvider: deepseek-official
+        reviewModel: deepseek-flash
+        reviewTimeoutMs: 180000
+        reviewMaxOutputTokens: 8192
         sculptIdleTimeoutMs: 1800000
         enableHelpers: true
         enableMaintenanceHelpers: false
