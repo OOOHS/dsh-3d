@@ -24,3 +24,7 @@ Call `blender_view` with `edit_id` to observe or change views: `preset` (front/b
 `undo` and `redo` revisit stroke boundaries while preserving the current viewing angle. The latest 64 boundaries are retained. Exit with `action: "commit"` and a new `save_path` to save the edited `.blend`, or `action: "discard"` to keep the source. File-based Blender tools resume after exit.
 
 Each conversation owns its session. Images, the journal and periodic recovery files are stored in `.dsh-blender/sculpt/<edit_id>/`. Idle sessions expire after 30 minutes by default. A desktop graphics context and Blender Essentials brush assets are required.
+
+## Continue editing the saved scene
+
+A commit makes its returned `saved_path` the current editable checkpoint. Subsequent `blender_python` calls use this path as `blend_path` and save a new version. Keep working from the latest returned scene so brush shaping and later code changes accumulate together. Read the current checkpoint through `review_reconstruction({action: "status"})` when resuming. Symmetry defaults to an empty string; choose it according to the reference and the specific region.

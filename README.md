@@ -45,7 +45,7 @@ Model-provider credentials belong in your dsh environment or configuration. Keep
 
 ## Independent visual review
 
-`review_reconstruction` sends a reference and 1–6 genuine model renders to a fresh vision-model context. It returns `same`, `approved`, confidence and specific differences, and saves a report containing the reviewer route, fixed rubric, raw response, image hashes and optional `.blend` hash. A successful review of current final artifacts is required by the reconstruction skill before completion; errors, uncertain verdicts and major defects leave the task incomplete.
+`review_reconstruction` sends a reference and 1–6 genuine model renders to a fresh vision-model context. It returns `same`, `approved`, confidence and specific differences, and saves a report containing the reviewer route, fixed rubric, raw response, image hashes and `.blend` hash. Register image reconstruction with `action: "begin"` before modeling. The plugin uses the public DSH stop-boundary hook to continue the same conversation until the saved scene and renders receive approval. `action: "status"` returns its current checkpoint and acceptance state. A regular review requires `blend_path`.
 
 The default route is `deepseek-official / deepseek-flash`, using the configured DeepSeek credentials with an independent context. Set `reviewProvider` and `reviewModel` to another configured vision-capable route when desired. Review requests send the supplied evidence images to that provider and use its normal API billing. `reviewTimeoutMs` defaults to 180000 and `reviewMaxOutputTokens` to 8192. The route and rubric are controlled by plugin configuration, outside the modeling agent's tool arguments.
 
@@ -54,6 +54,10 @@ Example tool input:
 ```json
 {"reference_path":"inputs/reference.jpg","render_paths":["artifacts/front.png","artifacts/side.png","artifacts/back.png"],"render_views":["reference-aligned","side","back"],"blend_path":"artifacts/model-v003.blend","report_path":"artifacts/review-v003.json"}
 ```
+
+`continueUntilApproved` defaults to true. `reviewContinuationBudgetMs` defaults to 0, using the host and user limits; a positive value sets an explicit elapsed continuation budget. Review failures pause the task, and user cancellation stops the active turn. Resumed sessions retain their checkpoint in ordinary session context and wait for direct user continuation before `action: "begin"` rearms work. Earlier closing text remains in the conversation when the public hook adds another step.
+
+Brush commits become the current editable checkpoint. Subsequent plugin Python edits use that checkpoint as `blend_path`, so brush shaping and later code changes accumulate together. The reference's observed asymmetry guides regional shaping.
 
 Modeling guidance treats native brushes, mesh operations, curves, modifiers, Geometry Nodes and Python as available techniques. Inherited recipes are optional references; scene checkpoints and visual acceptance document the result.
 

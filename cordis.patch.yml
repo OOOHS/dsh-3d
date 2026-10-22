@@ -15,8 +15,10 @@
         reviewModel: deepseek-flash
         reviewTimeoutMs: 180000
         reviewMaxOutputTokens: 8192
+        continueUntilApproved: true
+        reviewContinuationBudgetMs: 0
         sculptIdleTimeoutMs: 1800000
         enableHelpers: true
         enableMaintenanceHelpers: false
         registerSkill: true
-        registerModuleSkills: true
+        registerModuleSkills: false

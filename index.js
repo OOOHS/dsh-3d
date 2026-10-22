@@ -11,6 +11,7 @@ import Schema from '@deepseek-ai/schemastery'
 import { HELPER_BY_NAME, HELPER_CATALOG } from './lib/helper-catalog.js'
 import { SculptSessions, createSculptTools } from './lib/sculpt-session.js'
 import { createReviewTool } from './lib/reconstruction-review.js'
+import { ReconstructionSessions } from './lib/reconstruction-session.js'
 
 export const name = 'dsh-3d'
 export const inject = ['tools', 'skills']
@@ -30,6 +31,8 @@ export const Config = Schema.object({
   reviewModel: Schema.string().default('deepseek-flash'),
   reviewTimeoutMs: Schema.number().default(180000),
   reviewMaxOutputTokens: Schema.number().default(8192),
+  continueUntilApproved: Schema.boolean().default(true),
+  reviewContinuationBudgetMs: Schema.number().default(0),
   enableHelpers: Schema.boolean().default(true),
   enableMaintenanceHelpers: Schema.boolean().default(false),
   registerSkill: Schema.boolean().default(true),
@@ -61,6 +64,9 @@ const logSchema = {
 }
 
 function assertConfig(config) {
+  if (config.reviewContinuationBudgetMs !== undefined && (!Number.isSafeInteger(config.reviewContinuationBudgetMs) || config.reviewContinuationBudgetMs < 0)) {
+    throw new Error('dsh-3d: reviewContinuationBudgetMs must be a non-negative integer (0 uses the host/user limits)')
+  }
   for (const key of ['reviewTimeoutMs', 'reviewMaxOutputTokens']) {
     if (config[key] !== undefined && (!Number.isInteger(config[key]) || config[key] <= 0)) throw new Error(`dsh-3d: ${key} must be a positive integer`)
   }
@@ -1220,19 +1226,27 @@ export function apply(ctx, config) {
     writable: (path, overwrite) => assertWritableTarget(path, overwrite, 'save_path'),
   }, () => ctx.get?.('attachments')) : undefined
   ctx.effect?.(() => () => sessions?.dispose())
+  const reconstruction = new ReconstructionSessions(ctx, config, { resolve: resolveWorkspacePath }, sessions)
+  const wrap = (tool, fileBased = true) => ({ ...tool, async execute(args, exec) {
+    const execute = async () => {
+      await reconstruction.before(tool.name, args, exec)
+      const value = await tool.execute(args, exec)
+      reconstruction.changed(tool.name, args, value, exec)
+      return value
+    }
+    return sessions && fileBased ? sessions.serial(async () => {
+      await sessions.guard(tool.name, args, exec)
+      return execute()
+    }) : execute()
+  } })
   for (const tool of createTools(config)) {
-    ctx.tools.register(sessions ? { ...tool, execute(args, exec) {
-      return sessions.serial(async () => {
-        await sessions.guard(tool.name, args, exec)
-        return tool.execute(args, exec)
-      })
-    } } : tool)
+    ctx.tools.register(wrap(tool))
   }
-  if (sessions) for (const tool of createSculptTools(sessions)) ctx.tools.register(tool)
+  if (sessions) for (const tool of createSculptTools(sessions)) ctx.tools.register(wrap(tool, false))
   if (config.enableReview !== false) ctx.tools.register(createReviewTool(ctx, config, {
     resolve: resolveWorkspacePath,
     writable: (path, overwrite) => assertWritableTarget(path, overwrite, 'report_path'),
-  }))
+  }, reconstruction))
 }
 
 export const internals = {

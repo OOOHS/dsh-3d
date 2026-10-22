@@ -10,8 +10,11 @@ Produce editable three-dimensional geometry faithful to the user's reference and
 ## Working with the tools
 
 - Inspect the reference and call `blender_status` before modeling. Copy external reference files into the workspace for the workspace-scoped tools, preserving originals.
-- Use native brushes when they can improve shape. When programming leaves a visible problem unresolved, or repeated parameter edits make little progress, consider `blender_sculpt` for a more direct local correction. Brush work is useful for primary forms and refinement, with immediate visual feedback and undo.
+- For image reconstruction, register the workspace reference with `review_reconstruction({action: "begin", reference_path: "..."})` before modeling. Supply `blend_path` when continuing an existing scene. Use `action: "status"` to recover the current checkpoint and acceptance state.
+- Choose form-making methods from visual feedback. Native brushes offer direct control of organic shapes and local irregularities. When repeated parameter changes leave a shape problem unresolved, use `blender_sculpt` to reshape the mesh directly and build on that result.
+- Observe corresponding sides separately and preserve the reference's differences in contour, flow, pose, layering and occlusion. Shape each region according to its visible evidence.
 - `blender_sculpt` keeps an editing session open across strokes; `blender_view` returns the current image and controls the view. Prepare adequate base-mesh density and commit or discard before returning to file-based tools. Read [sculpting.md](references/sculpting.md) for coordinates and examples.
+- Treat the current editable `.blend` as the source for subsequent edits. After a brush commit, continue from its returned scene path; use that path as `blend_path` for Python edits. Preserve local changes while developing the scene.
 - Inspect rendered images, preserve useful viewpoints across iterations, and save versioned `.blend` checkpoints. Let the visible result guide technique changes.
 - Read [dsh-integration.md](references/dsh-integration.md) when tool details are useful. The helper catalog provides optional reference-analysis utilities.
 
@@ -22,6 +25,6 @@ Produce editable three-dimensional geometry faithful to the user's reference and
 
 ## Completion
 
-Apply a high standard to fidelity and overall visual quality. Submit the current saved `.blend` and genuine comparable model renders to `review_reconstruction`. Completion requires a successful `approved: true` report bound to these current artifacts. Use review feedback to improve the result and submit changed artifacts for a fresh review.
+Apply a high standard to fidelity and overall visual quality. Submit the current saved `.blend` and genuine comparable model renders to `review_reconstruction`. The plugin keeps a registered reconstruction active until a successful `approved: true` report matches these current artifacts. Use review feedback to improve the result and submit changed artifacts for a fresh review. User cancellation, configured resource limits and execution failures preserve an incomplete task. Resume it with `action: "begin"` when the user continues the work.
 
 Deliver the editable `.blend`, requested export (`.glb` by default), inspected renders and review report. State remaining uncertainty and report incomplete work accurately. Keep original inputs and unrelated user scene data preserved.

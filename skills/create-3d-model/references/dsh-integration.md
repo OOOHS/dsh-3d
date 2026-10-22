@@ -14,7 +14,7 @@ The plugin registers one modeling skill by default. Its tools remain available t
 
 - `blender_preview`: temporary camera/light preview from a standard axis or isometric view.
 - `blender_render`: render the scene's authored camera; `blender_render_frames`: animation images.
-- `review_reconstruction`: demanding independent visual review of the reference and current renders. Include the final `blend_path` so approval binds to the exact saved scene. Inspect feedback and obtain a fresh approval after changes.
+- `review_reconstruction`: `action: "begin"` registers the reference and an optional existing `blend_path`; `action: "status"` returns the editable checkpoint and review state; `action: "review"` (default) submits current renders and the required final `blend_path` for independent visual acceptance. The plugin continues a registered task at the public stop boundary until current evidence is approved. Inspect feedback and obtain a fresh approval after changes.
 - `blender_export`: save a portable model; `blender_validate_scene` and `blender_validate_export`: inspect structure and export/re-import compatibility.
 - `blender_helper_catalog` and `blender_helper_run`: discover and execute optional analysis helpers with their exact arguments.
 
@@ -28,4 +28,8 @@ Blender Python is scoped to Blender scene data. Use the host's dedicated tools f
 
 ## Review reports
 
-Send a comparable reference view and useful alternate views of the actual current geometry, with reference planes and guide overlays hidden. Review reports record the model route, fixed rubric, response, source/render hashes and the supplied `.blend` hash. `approved: true` from a successful report of the current final artifacts is the completion requirement. A failed or rejected review calls for further work or an accurate incomplete handoff. Technical export validation complements visual acceptance.
+Send a comparable reference view and useful alternate views of the actual current geometry, with reference planes and guide overlays hidden. Review reports record the model route, fixed rubric, response, source/render hashes and the supplied `.blend` hash. `approved: true` from a successful report of the current final artifacts is the completion requirement. A rejected review keeps the task active. Review service errors and configured resource limits preserve a paused, incomplete task. User cancellation stops the active turn; a fresh `begin` resumes work on direct user continuation. Technical export validation complements visual acceptance.
+
+## Current scene
+
+Each brush commit publishes its saved scene as the current checkpoint. Continue Python edits from that file using `blend_path`. This preserves sculpted geometry while keeping programmatic editing available. The state notice is persisted in the ordinary conversation history; resumed sessions start paused and return their checkpoint through `action: "status"`.

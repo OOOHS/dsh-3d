@@ -45,7 +45,7 @@ Blender 可在 PATH 中提供，也可在 web profile 的 `cordis.patch.yml` 中
 
 ## 独立视觉评审
 
-`review_reconstruction` 把参考图和 1～6 张真实模型渲染交给独立上下文的视觉模型，返回 `same`、`approved`、置信度和具体差异，并保存包含模型路由、固定评审标准、原始回复、图片哈希及可选 `.blend` 哈希的报告。重建 skill 要求当前最终产物获得评审通过，才可宣告完成；评审错误、证据不确定或存在主要差异时，任务仍处于未完成状态。
+`review_reconstruction` 把参考图和 1～6 张真实模型渲染交给独立上下文的视觉模型，返回 `same`、`approved`、置信度和具体差异，并保存包含模型路由、固定评审标准、原始回复、图片哈希及 `.blend` 哈希的报告。开始图像重建时用 `action: "begin"` 登记参考图；插件通过 dsh 公开的回合结束钩子持续推进同一会话，直到当前工程与渲染获得评审通过。`action: "status"` 返回当前编辑检查点与审核状态；正式评审需要提供 `blend_path`。
 
 默认使用已配置的 `deepseek-official / deepseek-flash`，通过独立上下文评审。配置 `reviewProvider` 和 `reviewModel` 可选择其他已接入且支持图像的模型。评审会向所选服务发送证据图片，按该服务正常 API 规则计费。`reviewTimeoutMs` 默认 180000，`reviewMaxOutputTokens` 默认 8192。建模 agent 的工具参数负责提供证据，评审路由和评判标准由插件配置维护。
 
@@ -54,6 +54,10 @@ Blender 可在 PATH 中提供，也可在 web profile 的 `cordis.patch.yml` 中
 ```json
 {"reference_path":"inputs/reference.jpg","render_paths":["artifacts/front.png","artifacts/side.png","artifacts/back.png"],"render_views":["reference-aligned","side","back"],"blend_path":"artifacts/model-v003.blend","report_path":"artifacts/review-v003.json"}
 ```
+
+`continueUntilApproved` 默认开启。`reviewContinuationBudgetMs` 默认为 0，沿用宿主与用户的资源限制；正数可配置显式的持续运行时间预算。评审服务错误会暂停任务，用户停止会终止当前回合。恢复会话后保留普通会话记录中的编辑检查点，收到用户继续指令后通过 `action: "begin"` 恢复推进。公开钩子会在提前收尾的文字之后追加后续工作，聊天记录会保留这些中间消息。
+
+画笔提交后的场景会成为当前编辑检查点；后续插件 Python 修改使用这个文件作为 `blend_path`，使雕刻与代码修改可以累积。各区域的形态依据参考图中观察到的非对称关系分别塑造。
 
 建模说明允许自由组合原生笔刷、网格编辑、曲线、修改器、Geometry Nodes 和 Python；上游配方作为可选参考，通过工程快照和视觉验收记录结果。
 

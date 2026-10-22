@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.2.3-dev.4 - 2026-10-22
+
+- Continue registered reconstruction tasks through the public DSH stop-boundary hook until the current scene and image evidence receive independent approval.
+- Add begin/status actions to the existing review tool, with conversation-local state, checkpoint recovery, cancellation handling and an optional explicit time budget.
+- Carry native brush commits forward as the editable scene and protect their checkpoint chain during subsequent plugin edits.
+- Keep one default skill, encourage direct mesh shaping when scripted edits stall, and preserve observed asymmetry through independent regional modeling.
+
 ## 0.2.3-dev.3 - 2026-10-22
 
 - Register one concise modeling skill by default; retain the 29 upstream modules as an explicit legacy option and preserve their helper scripts and provenance.
