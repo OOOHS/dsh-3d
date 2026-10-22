@@ -13,7 +13,7 @@ The development version adds persistent native sculpting and live viewport feedb
 Current capabilities include:
 
 - 16 tools: the 13 upstream Blender tools, `blender_sculpt`, `blender_view`, and independent `review_reconstruction`.
-- 30 skills covering modeling, reference-image reconstruction, materials, lighting, animation, and artifact handoff.
+- One concise modeling skill by default, with native brush guidance and optional reference-analysis helpers. The 29 upstream domain skills remain available through `registerModuleSkills: true` for legacy use.
 - 26 analysis and validation helpers, with 23 enabled by default.
 
 The local development setup has exercised plugin loading, cube creation, rendering, GLB export and clean re-import, and an image-analysis helper using dsh `0.2.1-alpha.2` and Blender `5.2.2 LTS` on macOS ARM64. The historical [upstream compatibility report](docs/compatibility-v0.2.3.md) records the original project's separate validation.

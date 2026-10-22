@@ -17,10 +17,10 @@ const config = {
   enableHelpers: true,
   enableMaintenanceHelpers: false,
   registerSkill: true,
-  registerModuleSkills: true,
+  registerModuleSkills: false,
 }
 
-test('registers the complete skill stack and Blender production tools', () => {
+test('registers one default modeling skill and all Blender production tools', () => {
   const tools = []
   const skills = []
   apply({
@@ -46,13 +46,19 @@ test('registers the complete skill stack and Blender production tools', () => {
     'blender_view',
     'review_reconstruction',
   ])
-  assert.equal(skills.length, 30)
+  assert.equal(skills.length, 1)
   assert.equal(skills[0].name, 'create-3d-model')
   assert.equal(skills[0].provider, 'dsh-3d')
   assert.match(skills[0].content, /blender_status/u)
   assert.equal(skills[0].resourceBase.kind, 'directory')
-  assert.equal(skills.some((skill) => skill.name === 'wireframe-to-3d'), true)
-  assert.equal(skills.some((skill) => skill.name === 'blender-animation'), true)
+  assert.deepEqual(skills.map((skill) => skill.name), ['create-3d-model'])
+})
+
+test('legacy module registration remains an explicit opt-in', () => {
+  const skills = []
+  apply({ tools: { register() {} }, skills: { register(skill) { skills.push(skill) } } }, { ...config, registerModuleSkills: true })
+  assert.equal(skills.length, 30)
+  assert.ok(skills.some((skill) => skill.name === 'blender-modeling'))
 })
 
 test('can disable the arbitrary Blender Python tool and bundled skill', () => {

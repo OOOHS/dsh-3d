@@ -13,7 +13,7 @@
 当前能力包括：
 
 - 16 个工具：上游的 13 个 Blender 工具，加上 `blender_sculpt`、`blender_view` 和独立的 `review_reconstruction`。
-- 30 个 skills，覆盖建模、参考图重建、材质、灯光、动画和产物交付。
+- 默认提供 1 个精简建模 skill，附带原生画笔说明和可选分析工具。29 个上游领域 skill 保留为兼容资料，可通过 `registerModuleSkills: true` 显式启用。
 - 26 个分析与验证 helper，默认启用其中 23 个。
 
 本地已在 macOS ARM64、dsh `0.2.1-alpha.2`、Blender `5.2.2 LTS` 下验证插件加载、立方体创建、渲染、GLB 导出与干净回读，以及图像分析 helper。[上游兼容性报告](docs/compatibility-v0.2.3.md) 另行保留原项目的历史验证记录。

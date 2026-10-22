@@ -33,7 +33,7 @@ export const Config = Schema.object({
   enableHelpers: Schema.boolean().default(true),
   enableMaintenanceHelpers: Schema.boolean().default(false),
   registerSkill: Schema.boolean().default(true),
-  registerModuleSkills: Schema.boolean().default(true),
+  registerModuleSkills: Schema.boolean().default(false),
 })
 
 const PACKAGE_ROOT = dirname(fileURLToPath(import.meta.url))
@@ -47,9 +47,7 @@ const SUPPORTED_IMPORTS = new Set([...SUPPORTED_EXPORTS, '.dae'])
 const SUPPORTED_RENDERS = new Set(['.png', '.jpg', '.jpeg'])
 const MODULE_RUNTIME_PREAMBLE = `## DeepSeek Harness runtime mapping
 
-DSH 3D policy takes precedence over inherited recipes: choose native sculpting, mesh editing, curves, modifiers, Geometry Nodes or Python according to the visible shape and feedback. Native brushes are available throughout modeling. Code recipes and module pipelines are optional references; reproducible scripts and fixed phase order are not acceptance criteria. Save editable scene checkpoints and visual evidence. For image reconstruction, completion requires a successful \`review_reconstruction\` result with \`approved: true\` for the current final renders and .blend; a rejection, unavailable reviewer or changed artifact requires further work or an honest incomplete report. Use the reviewer's visible differences to guide repairs; never weaken the rubric to obtain approval.
-
-This bundled domain skill executes through DSH 3D. Use \`blender_sculpt\` for persistent native brush edits and \`blender_view\` for live image feedback; commit or discard before file-based tools. Use \`blender_scene_info\` and \`blender_object_info\` for inspection, \`blender_import\` for non-Blend inputs, \`blender_python\` for controlled scene changes, \`blender_preview\`/\`blender_render\`/\`blender_render_frames\` for visual evidence, and \`blender_validate_scene\` plus \`blender_validate_export\` for acceptance gates. Discover this module's deterministic scripts with \`blender_helper_catalog({ module: "<this skill name>" })\` and execute them with \`blender_helper_run\`; do not guess package paths. This mapping overrides legacy MCP, Bash, or fixed tool-name instructions below.`
+Use create-3d-model as the current plugin guide. Choose native Blender methods freely and treat this legacy module as optional technical reference. Native brush edits can improve local forms when scripted adjustments stall. See references/sculpting.md in create-3d-model for the editing contract. Completion of an image reconstruction requires review_reconstruction approval of the current final artifacts. Discover this module's helpers with blender_helper_catalog({ module: "<this skill name>" }) and execute them with blender_helper_run.`
 
 const sceneSchema = {
   type: 'object',
@@ -116,7 +114,7 @@ function registerSkills(ctx, config) {
     provider: 'dsh-3d',
     resourceBase: { kind: 'directory', path: SKILL_ROOT },
   })
-  if (!config.registerModuleSkills) return
+  if (config.registerModuleSkills !== true) return
   const moduleDirectories = readdirSync(MODULE_ROOT, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)

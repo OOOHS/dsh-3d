@@ -24,7 +24,7 @@ async function runtime(host, reportPath) {
     assert.equal(tools.length, 16)
     const workspace = await mkdtemp(join(process.env.DSH_HOME, 'workspace-'))
     const skills = (await ctx.skills.list({ cwd: workspace })).filter((skill) => skill.provider === 'dsh-3d')
-    assert.equal(skills.length, 30)
+    assert.equal(skills.length, 1)
     const skill = await ctx.skills.get('create-3d-model', { cwd: workspace })
     assert.match(skill.content, /blender_status/u)
     const handle = await ctx.agents.create({ sessionId: randomUUID(), meta: { cwd: workspace } })

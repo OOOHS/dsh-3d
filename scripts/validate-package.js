@@ -27,6 +27,7 @@ const required = [
   'skills/create-3d-model/SKILL.md',
   'skills/create-3d-model/references/dsh-integration.md',
   'skills/create-3d-model/references/capability-map.md',
+  'skills/create-3d-model/references/sculpting.md',
   'LICENSE',
   'NOTICE',
 ]
@@ -76,4 +77,4 @@ for (const helper of HELPER_CATALOG) {
 const patch = readFileSync(join(root, 'cordis.patch.yml'), 'utf8')
 assert.match(patch, /name: dsh-3d/u)
 
-console.log(`validated ${manifest.name} ${manifest.version}: ${modules.length + 1} skills, ${helperScripts.length} helpers, required files present`)
+console.log(`validated ${manifest.name} ${manifest.version}: 1 default skill (${modules.length} optional legacy modules), ${helperScripts.length} helpers, required files present`)

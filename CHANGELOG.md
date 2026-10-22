@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.2.3-dev.3 - 2026-10-22
+
+- Register one concise modeling skill by default; retain the 29 upstream modules as an explicit legacy option and preserve their helper scripts and provenance.
+- Put brush coordinates and session examples in a focused reference. Encourage native brushes when scripted changes stall, with free choice of modeling methods.
+- Use positive instructions in the active skill and its tool references. Include optional web research and evidence-based project learning.
+- Raise the independent critic's general quality standard and use high reasoning effort when supported, keeping the rubric applicable to new subjects.
+
 ## 0.2.3-dev.2 - 2026-10-22
 
 - Add `review_reconstruction`: independent vision-model comparison of the reference and genuine renders, with explicit match/approval, concrete discrepancies and hashed audit reports.
