@@ -738,11 +738,11 @@ function createTools(config) {
   if (config.enablePython) {
     tools.push(defineTool({
       name: 'blender_python',
-      description: 'Execute reviewed bpy/bmesh Python in Blender background mode and save a versioned .blend result. The script receives bpy, bmesh, mathutils, workspace, input_path, output_path, and may set dsh_result to JSON-safe evidence. Use small idempotent chunks; never use this for filesystem, network, package-install, or unrelated process work.',
+      description: 'Edit an existing Blender scene with bpy/bmesh or create a new scene, then save a versioned .blend. Set blend_path to the current scene: its objects and sculpted meshes are loaded before the script runs. Edit named components, add geometry or assemble parts while preserving useful existing changes. The script receives bpy, bmesh, mathutils, workspace, input_path, output_path, and may set dsh_result to JSON-safe evidence. Use dedicated host tools for filesystem, network, package and process work.',
       parameters: {
-        script: { type: 'string', required: true, description: 'Blender Python modeling code. Keep it scoped, deterministic, and retryable.' },
+        script: { type: 'string', required: true, description: 'bpy/bmesh operations on the loaded scene. Choose the intended component scope and preserve useful existing geometry and local shaping.' },
         save_path: { type: 'string', required: true, description: 'New versioned .blend output path inside the current dsh workspace.' },
-        blend_path: { type: 'string', description: 'Optional existing .blend input inside the current dsh workspace. Omit to start from factory startup.' },
+        blend_path: { type: 'string', description: 'Current workspace .blend to load before running the code, including prior brush edits. Omit when creating a new scene.' },
         allow_overwrite: { type: 'boolean', description: 'Allow replacing save_path. Defaults to false and should be used only with explicit user intent.' },
       },
       output: {

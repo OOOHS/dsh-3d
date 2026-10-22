@@ -6,7 +6,7 @@ The plugin registers one modeling skill by default. Its tools remain available t
 
 - `blender_status`: Blender availability, workspace and capability information.
 - `blender_scene_info` and `blender_object_info`: scene structure, exact object names, bounds, topology and materials.
-- `blender_python`: native bpy/bmesh scene operations with `bpy`, `bmesh`, `mathutils`, `workspace`, `input_path` and `output_path` in scope. Retrieve objects by stable names, establish operator context and set `dsh_result` for useful structured evidence.
+- `blender_python`: native bpy/bmesh scene operations with `bpy`, `bmesh`, `mathutils`, `workspace`, `input_path` and `output_path` in scope. Set `blend_path` to load the current scene before code runs, retrieve objects by stable names and edit existing geometry or add components. Establish operator context and set `dsh_result` for useful structured evidence. Omit `blend_path` when creating a new scene.
 - `blender_sculpt` and `blender_view`: persistent native brush edits and live images; see [sculpting.md](sculpting.md).
 - `blender_import`: import a supported portable model into a saved `.blend` when the task includes one.
 
@@ -33,3 +33,5 @@ Send a comparable reference view and useful alternate views of the actual curren
 ## Current scene
 
 Each brush commit publishes its saved scene as the current checkpoint. Continue Python edits from that file using `blend_path`. This preserves sculpted geometry while keeping programmatic editing available. The state notice is persisted in the ordinary conversation history; resumed sessions start paused and return their checkpoint through `action: "status"`.
+
+Saved mesh data is editable through bpy/bmesh after sculpting. Generator parameters describe an earlier construction; work with the current mesh data for incremental changes, and choose the scope of regeneration explicitly. Components can remain separate objects through generation and sculpting, then be positioned, parented, joined or otherwise assembled in the current scene.

@@ -1,6 +1,6 @@
 # Native brush editing
 
-Use brushes for direct local shaping and for forms that remain awkward after scripted adjustments. Combine brushes with other native Blender methods as useful.
+Use brushes for primary form building, organic shapes and local refinement. Enter brush mode whenever direct shaping is useful, keep editing across strokes and observations, and combine it freely with other native Blender methods.
 
 ## Editing contract
 
@@ -28,3 +28,5 @@ Each conversation owns its session. Images, the journal and periodic recovery fi
 ## Continue editing the saved scene
 
 A commit makes its returned `saved_path` the current editable checkpoint. Subsequent `blender_python` calls use this path as `blend_path` and save a new version. Keep working from the latest returned scene so brush shaping and later code changes accumulate together. Read the current checkpoint through `review_reconstruction({action: "status"})` when resuming. Symmetry defaults to an empty string; choose it according to the reference and the specific region.
+
+Commit saves an intermediate modeling state. The saved file contains the full scene, including the sculpted mesh and the other components. Re-enter with the latest `blend_path` and an `object_name` to continue shaping that component or another one. Use Python on the same saved scene to add geometry, edit existing vertices, adjust modifiers or assemble components; preserve useful existing changes when choosing what to regenerate.

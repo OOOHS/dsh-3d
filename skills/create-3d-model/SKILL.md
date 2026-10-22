@@ -7,14 +7,16 @@ description: Create and refine editable Blender models from text or images. Use 
 
 Produce editable three-dimensional geometry faithful to the user's reference and requested quality. Choose and combine native Blender techniques freely: mesh editing, brushes, curves, modifiers, Geometry Nodes and Python.
 
+Maintain a current editable scene throughout the task. Apply code and brush edits to that scene, preserving useful existing geometry and local shaping. Keep components independently addressable when useful; create, shape and assemble them as the model develops. Choose the scope of regeneration deliberately.
+
 ## Working with the tools
 
 - Inspect the reference and call `blender_status` before modeling. Copy external reference files into the workspace for the workspace-scoped tools, preserving originals.
 - For image reconstruction, register the workspace reference with `review_reconstruction({action: "begin", reference_path: "..."})` before modeling. Supply `blend_path` when continuing an existing scene. Use `action: "status"` to recover the current checkpoint and acceptance state.
-- Choose form-making methods from visual feedback. Native brushes offer direct control of organic shapes and local irregularities. When repeated parameter changes leave a shape problem unresolved, use `blender_sculpt` to reshape the mesh directly and build on that result.
+- Choose form-making methods from visual feedback. Use native brushes for primary form building, organic shapes and local refinement. Enter brush mode whenever direct shaping suits the geometry, and keep editing across strokes and observations for as long as useful.
 - Observe corresponding sides separately and preserve the reference's differences in contour, flow, pose, layering and occlusion. Shape each region according to its visible evidence.
 - `blender_sculpt` keeps an editing session open across strokes; `blender_view` returns the current image and controls the view. Prepare adequate base-mesh density and commit or discard before returning to file-based tools. Read [sculpting.md](references/sculpting.md) for coordinates and examples.
-- Treat the current editable `.blend` as the source for subsequent edits. After a brush commit, continue from its returned scene path; use that path as `blend_path` for Python edits. Preserve local changes while developing the scene.
+- Continue Python edits with `blend_path` set to the current `.blend`; the tool loads its existing objects and sculpted meshes before running code. A brush commit saves an intermediate scene that can receive further code edits or another brush session, including edits to other components.
 - Inspect rendered images, preserve useful viewpoints across iterations, and save versioned `.blend` checkpoints. Let the visible result guide technique changes.
 - Read [dsh-integration.md](references/dsh-integration.md) when tool details are useful. The helper catalog provides optional reference-analysis utilities.
 

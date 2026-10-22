@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.2.3-dev.6 - 2026-10-22
+
+- Make the current editable scene the shared state for code and brush work, with independently editable components and explicit regeneration scope.
+- Present persistent brush mode as a primary modeling method, with repeated strokes, intermediate commits and re-entry on other components.
+- Align Python and sculpt tool descriptions with incremental editing of saved scenes and preserve the existing tool execution interfaces.
+
 ## 0.2.3-dev.5 - 2026-10-22
 
 - Use low reasoning effort for the independent image reviewer when supported and record the effective effort in each review report.
