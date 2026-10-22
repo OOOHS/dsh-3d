@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.2.3-dev.5 - 2026-10-22
+
+- Use low reasoning effort for the independent image reviewer when supported and record the effective effort in each review report.
+- Verify that successive reviews each contain a fresh reference-and-render request with no accumulated review history.
+
 ## 0.2.3-dev.4 - 2026-10-22
 
 - Continue registered reconstruction tasks through the public DSH stop-boundary hook until the current scene and image evidence receive independent approval.

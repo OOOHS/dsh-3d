@@ -26,14 +26,17 @@ async function fixture(t, { reply = JSON.stringify(accepted), finish = { kind: '
   const config = { restrictToWorkspace: true, reviewProvider: 'critic-provider', reviewModel: 'critic-vision' }
   const exec = { agent: { session: { header: { cwd: workspace, id: randomUUID() } } }, signal: new AbortController().signal }
   let request
+  const requests = []
   const ctx = { get(name) {
     if (name === 'attachments') return { async saveImage({ mediaType, name: filename, data }) {
       return { attachmentId: filename, mediaType, width: 1, height: 1, bytes: data.length }
     } }
-    if (name === 'llm') return { async prepareCall(route) {
+    if (name === 'llm') return { async prepareCall(route, _signal, transform) {
       assert.equal(route.provider, 'critic-provider')
-      return { config: route, inputModalities: modalities, async *stream(options) {
+      const config = transform(route, { reasoning: { efforts: [{ id: 'low' }, { id: 'high' }] } })
+      return { config, inputModalities: modalities, async *stream(options) {
         request = options
+        requests.push(options)
         if (mutate) await mutate(workspace)
         yield { type: 'text-delta', index: 0, text: reply }
         yield { type: 'block-end', index: 0, block: { type: 'text', text: reply } }
@@ -45,7 +48,7 @@ async function fixture(t, { reply = JSON.stringify(accepted), finish = { kind: '
     await assert.rejects(readFile(path), { code: 'ENOENT' })
   } })
   const args = { reference_path: 'reference.png', render_paths: ['front.png', 'side.png'], render_views: ['reference-aligned', 'side'], blend_path: 'model.blend' }
-  return { workspace, tool, args, exec, request: () => request }
+  return { workspace, tool, args, exec, request: () => request, requests }
 }
 
 test('a fresh image-only context produces a hashed, durable approval report', async (t) => {
@@ -65,6 +68,14 @@ test('a fresh image-only context produces a hashed, durable approval report', as
   assert.equal(request.messages[0].content.filter((x) => x.type === 'image').length, 3)
   assert.equal(request.tools, undefined)
   assert.equal(request.system, REVIEW_SYSTEM)
+  assert.equal(request.reasoningEffort, 'low')
+  assert.equal(result.route.reasoningEffort, 'low')
+  const second = await f.tool.execute(f.args, f.exec)
+  assert.notEqual(second.review_id, result.review_id)
+  assert.equal(f.requests.length, 2)
+  assert.notEqual(f.requests[1].messages, request.messages)
+  assert.deepEqual(f.requests[1].messages, request.messages)
+  assert.equal(f.requests[1].messages.length, 1)
 })
 
 for (const [label, options] of [
