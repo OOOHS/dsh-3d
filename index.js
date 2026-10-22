@@ -12,6 +12,8 @@ import { HELPER_BY_NAME, HELPER_CATALOG } from './lib/helper-catalog.js'
 import { SculptSessions, createSculptTools } from './lib/sculpt-session.js'
 import { createReviewTool } from './lib/reconstruction-review.js'
 import { ReconstructionSessions } from './lib/reconstruction-session.js'
+import { MODELER_AGENT, REVIEWER_AGENT, agentSchema, agentSettings, registerAgentPresets } from './lib/agent-config.js'
+import { createInspectImageTool } from './lib/inspect-image.js'
 
 export const name = 'dsh-3d'
 export const inject = ['tools', 'skills']
@@ -27,10 +29,13 @@ export const Config = Schema.object({
   enableSculpt: Schema.boolean().default(true),
   sculptIdleTimeoutMs: Schema.number().default(1800000),
   enableReview: Schema.boolean().default(true),
-  reviewProvider: Schema.string().default('deepseek-official'),
-  reviewModel: Schema.string().default('deepseek-flash'),
-  reviewTimeoutMs: Schema.number().default(180000),
-  reviewMaxOutputTokens: Schema.number().default(8192),
+  modelerAgent: agentSchema(MODELER_AGENT),
+  reviewerAgent: agentSchema(REVIEWER_AGENT, true),
+  registerAgentPresets: Schema.boolean().default(true),
+  reviewProvider: Schema.string(),
+  reviewModel: Schema.string(),
+  reviewTimeoutMs: Schema.number(),
+  reviewMaxOutputTokens: Schema.number(),
   continueUntilApproved: Schema.boolean().default(true),
   reviewContinuationBudgetMs: Schema.number().default(0),
   enableHelpers: Schema.boolean().default(true),
@@ -64,6 +69,8 @@ const logSchema = {
 }
 
 function assertConfig(config) {
+  agentSettings(config, 'modeler')
+  agentSettings(config, 'reviewer')
   if (config.reviewContinuationBudgetMs !== undefined && (!Number.isSafeInteger(config.reviewContinuationBudgetMs) || config.reviewContinuationBudgetMs < 0)) {
     throw new Error('dsh-3d: reviewContinuationBudgetMs must be a non-negative integer (0 uses the host/user limits)')
   }
@@ -1247,6 +1254,8 @@ export function apply(ctx, config) {
     resolve: resolveWorkspacePath,
     writable: (path, overwrite) => assertWritableTarget(path, overwrite, 'report_path'),
   }, reconstruction))
+  ctx.tools.register(createInspectImageTool(ctx, config, { resolve: resolveWorkspacePath }))
+  if (config.registerAgentPresets !== false) registerAgentPresets(ctx, config)
 }
 
 export const internals = {

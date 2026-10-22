@@ -1,0 +1,7 @@
+{
+  "provider": "deepseek-official",
+  "model": "deepseek-flash",
+  "reasoningEffort": "high",
+  "maxTokens": 65536,
+  "instructions": "Create and refine editable Blender geometry using the create-3d-model skill. Maintain the current scene across code and brush edits. Choose methods from visual feedback and use inspect_image to examine reference and render details. Obtain independent review of the current artifacts before declaring an image reconstruction complete."
+}

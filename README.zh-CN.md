@@ -12,7 +12,8 @@
 
 当前能力包括：
 
-- 16 个工具：上游的 13 个 Blender 工具，加上 `blender_sculpt`、`blender_view` 和独立的 `review_reconstruction`。
+- 17 个工具：上游的 13 个 Blender 工具，加上 `blender_sculpt`、`blender_view`、`review_reconstruction` 和共享的 `inspect_image`。
+- 两份独立的原生 agent 配置：DSH 3D 建模与 DSH 3D 评审。评审角色提供图像观察和结构化提交两个工具。
 - 默认提供 1 个精简建模 skill，附带原生画笔说明和可选分析工具。29 个上游领域 skill 保留为兼容资料，可通过 `registerModuleSkills: true` 显式启用。
 - 26 个分析与验证 helper，默认启用其中 23 个。
 
@@ -45,9 +46,15 @@ Blender 可在 PATH 中提供，也可在 web profile 的 `cordis.patch.yml` 中
 
 ## 独立视觉评审
 
-`review_reconstruction` 把参考图和 1～6 张真实模型渲染交给独立上下文的视觉模型，返回 `same`、`approved`、置信度和具体差异，并保存包含模型路由、固定评审标准、原始回复、图片哈希及 `.blend` 哈希的报告。开始图像重建时用 `action: "begin"` 登记参考图；插件通过 dsh 公开的回合结束钩子持续推进同一会话，直到当前工程与渲染获得评审通过。`action: "status"` 返回当前编辑检查点与审核状态；正式评审需要提供 `blend_path`。
+`review_reconstruction` 为每次评审创建一个全新的 dsh agent，仅接收本轮冻结的参考图、1～6 张真实模型渲染和视角标签。它可以多次使用 `inspect_image` 放大裁切，通过 `submit_review` 提交判断。字段校验错误作为工具反馈返回，评审 agent 可以在同一轮修正；confidence 是可选信息。评审完成后保存报告、证据快照、裁切观察和 agent 事件日志，再释放运行中的评审会话。
 
-默认使用已配置的 `deepseek-official / deepseek-flash`，通过独立上下文评审。配置 `reviewProvider` 和 `reviewModel` 可选择其他已接入且支持图像的模型。评审会向所选服务发送证据图片，按该服务正常 API 规则计费。`reviewTimeoutMs` 默认 180000，`reviewMaxOutputTokens` 默认 8192。建模 agent 的工具参数负责提供证据，评审路由和评判标准由插件配置维护。
+`agents/modeler.json` 和 `agents/reviewer.json` 分别维护两种角色的模型、推理档位、输出预算和指令。插件在网页注册 **DSH 3D 建模**（`dsh-3d-modeler`）与 **DSH 3D 评审**（`dsh-3d-reviewer`）原生配置；新建建模会话时选择前者。也可在插件配置的 `modelerAgent`、`reviewerAgent` 中覆盖字段。建模默认 high，评审默认 low，均使用 `deepseek-official / deepseek-flash` 和已配置的凭据。网页显式选择的建模模型继续生效；评审独立使用其角色配置。模型服务按正常 API 规则计费。
+
+评审默认每轮最多 5 分钟、24 个观察/提交步骤，并为临时服务故障提供 2 次恢复机会。这些资源预算作用于单次评审；建模的持续迭代沿用宿主与用户限制。评审的唯一通过依据是对当前证据的有效判断；显著差异会保持验收待完成。冻结证据和当前 `.blend` 的哈希用于核对提交前后的一致性。
+
+`inspect_image` 接收工作区路径，可选归一化 `region: [left, top, right, bottom]` 和 `zoom: 1..4`；返回真实图片、原始尺寸、像素区域与哈希，最长边限制为 2048。评审角色使用 `reference`、`render_1` 等本轮证据 ID，访问范围限定为本轮图片。裁切使用已有 Python/Pillow 分析环境。
+
+开始图像重建时用 `action: "begin"` 登记参考图；插件通过 dsh 公开的回合结束钩子持续推进同一会话，直到当前工程与渲染获得评审通过。`action: "status"` 返回当前编辑检查点与审核状态；正式评审需要提供 `blend_path`。
 
 工具输入示例：
 
@@ -55,7 +62,7 @@ Blender 可在 PATH 中提供，也可在 web profile 的 `cordis.patch.yml` 中
 {"reference_path":"inputs/reference.jpg","render_paths":["artifacts/front.png","artifacts/side.png","artifacts/back.png"],"render_views":["reference-aligned","side","back"],"blend_path":"artifacts/model-v003.blend","report_path":"artifacts/review-v003.json"}
 ```
 
-`continueUntilApproved` 默认开启。`reviewContinuationBudgetMs` 默认为 0，沿用宿主与用户的资源限制；正数可配置显式的持续运行时间预算。评审服务错误会暂停任务，用户停止会终止当前回合。恢复会话后保留普通会话记录中的编辑检查点，收到用户继续指令后通过 `action: "begin"` 恢复推进。公开钩子会在提前收尾的文字之后追加后续工作，聊天记录会保留这些中间消息。
+`continueUntilApproved` 默认开启。`reviewContinuationBudgetMs` 默认为 0，沿用宿主与用户的资源限制；正数可配置显式的持续运行时间预算。评审耗尽本轮恢复预算后返回 `unavailable`，保留 `awaiting-review` 状态并允许重新评审；用户停止会终止当前回合。恢复会话后保留普通会话记录中的编辑检查点，收到用户继续指令后通过 `action: "begin"` 恢复推进。公开钩子会在提前收尾的文字之后追加后续工作，聊天记录会保留这些中间消息。
 
 画笔提交后的场景会成为当前编辑检查点；后续插件 Python 修改使用这个文件作为 `blend_path`，使雕刻与代码修改可以累积。各区域的形态依据参考图中观察到的非对称关系分别塑造。
 
@@ -76,6 +83,12 @@ Blender 可在 PATH 中提供，也可在 web profile 的 `cordis.patch.yml` 中
 ```sh
 pnpm validate
 pnpm test
+```
+
+评审生命周期检查使用真实 dsh agent 与本地脚本模型适配器，模型 API 调用为 0：
+
+```sh
+pnpm test:review-agent /absolute/path/to/dsh-host /absolute/path/to/python-with-Pillow
 ```
 
 可选的本机集成检查：

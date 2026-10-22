@@ -45,6 +45,7 @@ test('registers one default modeling skill and all Blender production tools', ()
     'blender_sculpt',
     'blender_view',
     'review_reconstruction',
+    'inspect_image',
   ])
   assert.equal(skills.length, 1)
   assert.equal(skills[0].name, 'create-3d-model')

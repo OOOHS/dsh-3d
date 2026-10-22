@@ -69,7 +69,7 @@ test('cancellation, queued human input and disposal yield control without restar
   await f.stop(); assert.equal(f.steered.length, 0)
 })
 
-test('explicit time budgets and review outages pause until a fresh human continuation', async () => {
+test('explicit time budgets require human continuation; review outages allow another assessment', async () => {
   const f = await fixture({ reviewContinuationBudgetMs: 1 }); await f.begin()
   f.manager.state(f.agent).started_at = 0
   await f.stop(); assert.equal(f.steered.length, 1)
@@ -79,7 +79,9 @@ test('explicit time budgets and review outages pause until a fresh human continu
   await f.begin()
   f.manager.reviewed(await f.review(false, 'error'), f.exec)
   await f.stop(); assert.equal(f.steered.length, 1)
-  await assert.rejects(f.begin(), /direct user continuation/u)
+  assert.equal((await f.manager.status(f.exec)).status, 'awaiting-review')
+  await f.manager.prepareReview({ reference_path: 'reference.png', blend_path: 'scene.blend' }, f.exec)
+  assert.equal((await f.manager.status(f.exec)).status, 'active')
 })
 
 test('restored sessions preserve checkpoints and resume only after fresh human input', async () => {

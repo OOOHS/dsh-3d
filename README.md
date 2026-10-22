@@ -12,7 +12,8 @@ The development version adds persistent native sculpting and live viewport feedb
 
 Current capabilities include:
 
-- 16 tools: the 13 upstream Blender tools, `blender_sculpt`, `blender_view`, and independent `review_reconstruction`.
+- 17 tools: the 13 upstream Blender tools, `blender_sculpt`, `blender_view`, `review_reconstruction`, and shared `inspect_image`.
+- Independent native DSH modeler/reviewer presets. The scoped reviewer receives observation and structured submission tools.
 - One concise modeling skill by default, with native brush guidance and optional reference-analysis helpers. The 29 upstream domain skills remain available through `registerModuleSkills: true` for legacy use.
 - 26 analysis and validation helpers, with 23 enabled by default.
 
@@ -45,9 +46,15 @@ Model-provider credentials belong in your dsh environment or configuration. Keep
 
 ## Independent visual review
 
-`review_reconstruction` sends a reference and 1–6 genuine model renders to a fresh vision-model context. It returns `same`, `approved`, confidence and specific differences, and saves a report containing the reviewer route, fixed rubric, raw response, image hashes and `.blend` hash. Register image reconstruction with `action: "begin"` before modeling. The plugin uses the public DSH stop-boundary hook to continue the same conversation until the saved scene and renders receive approval. `action: "status"` returns its current checkpoint and acceptance state. A regular review requires `blend_path`.
+`review_reconstruction` creates a fresh native dsh agent for every assessment, receiving only the current frozen reference, 1–6 genuine renders and view labels. It can inspect regions repeatedly with `inspect_image`, then call `submit_review`. Tool validation feedback lets it repair submissions within the same round; confidence is optional metadata. Each round archives evidence, observations, a report and agent events, then releases its live agent.
 
-The default route is `deepseek-official / deepseek-flash`, using the configured DeepSeek credentials with an independent context. Set `reviewProvider` and `reviewModel` to another configured vision-capable route when desired. Review requests send the supplied evidence images to that provider and use its normal API billing. `reviewTimeoutMs` defaults to 180000 and `reviewMaxOutputTokens` to 8192. The route and rubric are controlled by plugin configuration, outside the modeling agent's tool arguments.
+`agents/modeler.json` and `agents/reviewer.json` independently define routes, reasoning effort, output budgets and role instructions. The plugin registers **DSH 3D 建模** (`dsh-3d-modeler`) and **DSH 3D 评审** (`dsh-3d-reviewer`) native presets. Choose the modeler preset for new modeling sessions. Plugin configuration can override fields through `modelerAgent` and `reviewerAgent`. Both default to `deepseek-official / deepseek-flash` with configured credentials; modeling uses high effort and review uses low. Explicit model selections in a modeling session remain effective. Reviews use their independent role configuration and normal provider billing.
+
+A review round defaults to five minutes, 24 observation/submission steps and two transient service recoveries. These limits apply to one assessment; ongoing modeling follows host and user resource limits. Significant visible defects keep acceptance pending. Original scene/image hashes are checked before accepting the judgment.
+
+The shared `inspect_image` accepts a workspace image path, optional normalized `region: [left, top, right, bottom]` and `zoom: 1..4`. It returns actual image pixels, original dimensions, pixel coordinates and a source hash, capped at a 2048-pixel longest side. Reviewers use admitted evidence IDs such as `reference` and `render_1`. Cropping uses the existing Python/Pillow analysis environment.
+
+Register reconstruction with `action: "begin"` before modeling. The public DSH stop-boundary hook continues the conversation until the current scene and renders receive approval. `action: "status"` returns its current checkpoint and acceptance state; a regular review requires `blend_path`.
 
 Example tool input:
 
@@ -55,7 +62,7 @@ Example tool input:
 {"reference_path":"inputs/reference.jpg","render_paths":["artifacts/front.png","artifacts/side.png","artifacts/back.png"],"render_views":["reference-aligned","side","back"],"blend_path":"artifacts/model-v003.blend","report_path":"artifacts/review-v003.json"}
 ```
 
-`continueUntilApproved` defaults to true. `reviewContinuationBudgetMs` defaults to 0, using the host and user limits; a positive value sets an explicit elapsed continuation budget. Review failures pause the task, and user cancellation stops the active turn. Resumed sessions retain their checkpoint in ordinary session context and wait for direct user continuation before `action: "begin"` rearms work. Earlier closing text remains in the conversation when the public hook adds another step.
+`continueUntilApproved` defaults to true. `reviewContinuationBudgetMs` defaults to 0, using the host and user limits; a positive value sets an explicit elapsed continuation budget. An assessment that exhausts its recovery budget returns `unavailable`, retains `awaiting-review` and permits another attempt. User cancellation stops the active turn. Resumed sessions retain their checkpoint in ordinary session context and wait for direct user continuation before `action: "begin"` rearms work. Earlier closing text remains in the conversation when the public hook adds another step.
 
 Brush commits become the current editable checkpoint. Subsequent plugin Python edits use that checkpoint as `blend_path`, so brush shaping and later code changes accumulate together. The reference's observed asymmetry guides regional shaping.
 
@@ -76,6 +83,12 @@ Run `BLENDER_EXECUTABLE=/absolute/path/to/blender pnpm test:sculpt` for the real
 ```sh
 pnpm validate
 pnpm test
+```
+
+The native reviewer lifecycle check uses a local scripted adapter and real dsh agents, with zero model API calls:
+
+```sh
+pnpm test:review-agent /absolute/path/to/dsh-host /absolute/path/to/python-with-Pillow
 ```
 
 Optional integration checks exercise installed local dependencies:

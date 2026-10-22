@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.2.3-dev.7 - 2026-10-22
+
+- Add independent modeler/reviewer agent configurations and native DSH agent presets; keep modeling guidance as one compact skill.
+- Share `inspect_image` between both roles, with normalized crop/zoom, original pixel coordinates, image attachments and evidence fingerprints.
+- Run each assessment as a fresh native agent with frozen evidence, scoped observation/submission tools, archived events and deterministic teardown.
+- Recover incomplete submissions and tool validation errors inside the review turn; keep confidence optional. Bound observation, transient retry and elapsed resources per assessment.
+- Preserve unavailable assessments as awaiting review and allow a new attempt. Maintain strict acceptance of unchanged current scene and render evidence.
+
 ## 0.2.3-dev.6 - 2026-10-22
 
 - Make the current editable scene the shared state for code and brush work, with independently editable components and explicit regeneration scope.

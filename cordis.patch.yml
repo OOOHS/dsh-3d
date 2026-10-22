@@ -11,10 +11,7 @@
         enablePython: true
         enableSculpt: true
         enableReview: true
-        reviewProvider: deepseek-official
-        reviewModel: deepseek-flash
-        reviewTimeoutMs: 180000
-        reviewMaxOutputTokens: 8192
+        registerAgentPresets: true
         continueUntilApproved: true
         reviewContinuationBudgetMs: 0
         sculptIdleTimeoutMs: 1800000

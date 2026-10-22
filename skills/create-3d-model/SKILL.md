@@ -17,7 +17,7 @@ Maintain a current editable scene throughout the task. Apply code and brush edit
 - Observe corresponding sides separately and preserve the reference's differences in contour, flow, pose, layering and occlusion. Shape each region according to its visible evidence.
 - `blender_sculpt` keeps an editing session open across strokes; `blender_view` returns the current image and controls the view. Prepare adequate base-mesh density and commit or discard before returning to file-based tools. Read [sculpting.md](references/sculpting.md) for coordinates and examples.
 - Continue Python edits with `blend_path` set to the current `.blend`; the tool loads its existing objects and sculpted meshes before running code. A brush commit saves an intermediate scene that can receive further code edits or another brush session, including edits to other components.
-- Inspect rendered images, preserve useful viewpoints across iterations, and save versioned `.blend` checkpoints. Let the visible result guide technique changes.
+- Use `inspect_image` for full images and normalized region crops with zoom. Inspect rendered images, preserve useful viewpoints across iterations, and save versioned `.blend` checkpoints. Let the visible result guide technique changes.
 - Read [dsh-integration.md](references/dsh-integration.md) when tool details are useful. The helper catalog provides optional reference-analysis utilities.
 
 ## References and learning
@@ -27,6 +27,6 @@ Maintain a current editable scene throughout the task. Apply code and brush edit
 
 ## Completion
 
-Apply a high standard to fidelity and overall visual quality. Submit the current saved `.blend` and genuine comparable model renders to `review_reconstruction`. The plugin keeps a registered reconstruction active until a successful `approved: true` report matches these current artifacts. Use review feedback to improve the result and submit changed artifacts for a fresh review. User cancellation, configured resource limits and execution failures preserve an incomplete task. Resume it with `action: "begin"` when the user continues the work.
+Apply a high standard to fidelity and overall visual quality. Submit the current saved `.blend` and genuine comparable model renders to `review_reconstruction`. The plugin keeps a registered reconstruction active until a successful `approved: true` report matches these current artifacts. Use review feedback to improve the result and submit changed artifacts for a fresh review. Each assessment uses a fresh review agent with image inspection and a structured submission tool. An `unavailable` assessment retains pending acceptance; retry the review when evidence and service are available. User cancellation and configured resource limits preserve an incomplete task; resume it with `action: "begin"` when the user continues the work.
 
 Deliver the editable `.blend`, requested export (`.glb` by default), inspected renders and review report. State remaining uncertainty and report incomplete work accurately. Keep original inputs and unrelated user scene data preserved.
