@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.2.3-dev.8 - 2026-10-22
+
+- Detect stalled automatic endings from successful new tool operations and saved scene bytes. Repeated prose, status calls and unchanged review evidence preserve the idle counter.
+- Try one bounded context-policy recovery after repeated idle endings, then pause with the current checkpoint and incomplete acceptance. Productive work resets the stall window; a fresh human continuation resumes paused work.
+- Keep recovery inside the plugin using public stop-boundary, scoped compaction and event APIs. Lower the modeler preset's automatic context-compaction threshold to 60%.
+- Clarify native brush selection, built-in viewport feedback and reversible exploration. Move mesh preparation details to the sculpt reference and correct Multires/Shape Keys/Dynamic Topology prerequisites.
+- Add unit and native DSH regressions for the repeated-budget-message failure, repeated status operations, successful continued revisions and approval.
+
 ## 0.2.3-dev.7 - 2026-10-22
 
 - Add independent modeler/reviewer agent configurations and native DSH agent presets; keep modeling guidance as one compact skill.

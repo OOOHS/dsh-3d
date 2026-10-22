@@ -64,6 +64,8 @@ Example tool input:
 
 `continueUntilApproved` defaults to true. `reviewContinuationBudgetMs` defaults to 0, using the host and user limits; a positive value sets an explicit elapsed continuation budget. An assessment that exhausts its recovery budget returns `unavailable`, retains `awaiting-review` and permits another attempt. User cancellation stops the active turn. Resumed sessions retain their checkpoint in ordinary session context and wait for direct user continuation before `action: "begin"` rearms work. Earlier closing text remains in the conversation when the public hook adds another step.
 
+Automatic endings are checked for progress using successful new tool operations and saved scene contents. Three consecutive idle endings trigger a bounded recovery and then a paused checkpoint if work remains unchanged. Status queries and repeated submissions of the same evidence preserve the idle counter. Productive work resets it. The modeler preset compacts context at 60% pressure through the native scoped service. The guard uses public DSH APIs and persists a pause notice in ordinary session history.
+
 Brush commits become the current editable checkpoint. Subsequent plugin Python edits use that checkpoint as `blend_path`, so brush shaping and later code changes accumulate together. The reference's observed asymmetry guides regional shaping.
 
 Modeling guidance treats native brushes, mesh operations, curves, modifiers, Geometry Nodes and Python as available techniques. Inherited recipes are optional references; scene checkpoints and visual acceptance document the result.
@@ -89,6 +91,7 @@ The native reviewer lifecycle check uses a local scripted adapter and real dsh a
 
 ```sh
 pnpm test:review-agent /absolute/path/to/dsh-host /absolute/path/to/python-with-Pillow
+pnpm test:continuation /absolute/path/to/dsh-host
 ```
 
 Optional integration checks exercise installed local dependencies:

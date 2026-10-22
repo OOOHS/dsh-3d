@@ -1,12 +1,12 @@
 # Native brush editing
 
-Use brushes for primary form building, organic shapes and local refinement. Enter brush mode whenever direct shaping is useful, keep editing across strokes and observations, and combine it freely with other native Blender methods.
+Choose brushes when a local contour, soft volume or irregular surface is easier to shape through direct image feedback. Code remains useful for exact construction, topology and assembly; both edit the same scene. Grab moves a local silhouette, Draw/Inflate change volume, and Smooth blends the surface. A small reversible stroke can test whether direct shaping helps the current defect.
 
 ## Editing contract
 
-Prepare a visible mesh with sufficient base-mesh density. The bridge supports fixed-topology meshes; prepare topology, Multires, Shape Keys and Dynamic Topology as a separate operation before entry. Call `blender_sculpt` with `action: "begin"`, `blend_path`, `object_name` and an optional `preset` such as `front`.
+Choose a visible mesh with enough vertices in the region you want to shape. For a sparse mesh, add actual base-mesh subdivisions with Python first; inspect its current modifiers before applying topology changes. This bridge edits fixed-topology base meshes. Apply or remove Multires, use a base mesh with Shape Keys resolved, and keep Dynamic Topology disabled at entry. Call `blender_sculpt` with `action: "begin"`, `blend_path`, `object_name` and an optional `preset` such as `front`.
 
-The returned image is the current viewport. Keep its `edit_id` and latest `view_id`. During editing, each `stroke` returns a new image and updated geometry evidence. Continue applying strokes and observing their effect for as long as useful.
+Entry opens a viewport framed on the selected component and returns its image immediately. Each stroke also returns an updated image; the observations needed for brushing are included in those tool results. Keep its `edit_id` and latest `view_id`. During editing, each `stroke` returns a new image and updated geometry evidence. Continue applying strokes and observing their effect for as long as useful.
 
 - Brush choices: `draw`, `grab`, `smooth`, `inflate`. Set `invert: true` for the opposite direction, such as deflate.
 - `points`: 2–256 `[u,v,pressure?]` samples in the returned image, normalized from 0 to 1; the origin is the top-left, u goes right and v goes down. Repeat a point for a dab.
@@ -21,7 +21,7 @@ Example stroke, with IDs and coordinates taken from your current observation:
 
 Call `blender_view` with `edit_id` to observe or change views: `preset` (front/back/left/right/top/bottom), `orbit: [yaw,pitch]` in degrees, `zoom`, `pan: [right,up]`, `frame`, `rotation: [w,x,y,z]` or `projection` (ORTHO/PERSP). Use the latest returned view_id for each following stroke.
 
-`undo` and `redo` revisit stroke boundaries while preserving the current viewing angle. The latest 64 boundaries are retained. Exit with `action: "commit"` and a new `save_path` to save the edited `.blend`, or `action: "discard"` to keep the source. File-based Blender tools resume after exit.
+`undo` can reverse an unhelpful stroke while keeping the editing session open. `undo` and `redo` revisit stroke boundaries while preserving the current viewing angle. The latest 64 boundaries are retained. Exit with `action: "commit"` and a new `save_path` to save the edited `.blend`, or `action: "discard"` to keep the source. File-based Blender tools resume after exit.
 
 Each conversation owns its session. Images, the journal and periodic recovery files are stored in `.dsh-blender/sculpt/<edit_id>/`. Idle sessions expire after 30 minutes by default. A desktop graphics context and Blender Essentials brush assets are required.
 

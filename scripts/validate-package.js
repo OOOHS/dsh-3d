@@ -19,6 +19,7 @@ const required = [
   'lib/sculpt-session.js',
   'lib/reconstruction-review.js',
   'lib/reconstruction-session.js',
+  'lib/continuation-guard.js',
   'lib/inspect-image.js',
   'lib/agent-config.js',
   'lib/agent-role.js',

@@ -32,14 +32,17 @@ test('registered tasks continue through missing/rejected reviews and finish only
   await f.begin()
   await f.stop(); assert.equal(f.steered.length, 1)
   f.manager.reviewed(await f.review(false), f.exec)
-  for (let i = 0; i < 5; i++) await f.stop()
-  assert.equal(f.steered.length, 6)
+  for (let i = 0; i < 12; i++) {
+    await writeFile(join(f.workspace, 'scene.blend'), `productive revision ${i}`)
+    await f.stop()
+  }
+  assert.equal(f.steered.length, 13)
   assert.equal(f.steered[0].source.kind, 'dsh-3d-reconstruction')
   assert.equal(f.steered[0].source.state.continuations, 1)
   f.manager.reviewed(await f.review(), f.exec)
-  await f.stop(); assert.equal(f.steered.length, 6)
+  await f.stop(); assert.equal(f.steered.length, 13)
   await writeFile(join(f.workspace, 'scene.blend'), 'altered scene')
-  await f.stop(); assert.equal(f.steered.length, 7)
+  await f.stop(); assert.equal(f.steered.length, 14)
   assert.equal((await f.manager.status(f.exec)).status, 'active')
 })
 
@@ -126,4 +129,66 @@ test('approval of an older candidate cannot finish a different current checkpoin
   await f.stop()
   assert.equal(f.steered.length, 1)
   assert.equal((await f.manager.status(f.exec)).reconstruction.reason, 'current-scene-needs-review')
+})
+
+test('unchanged endings recover once then pause, with a durable checkpoint and a human resume fence', async () => {
+  const f = await fixture(); let recoveries = 0
+  f.agent.ctx = { get: () => ({ async compactIfNeeded(_agent, trigger) { assert.equal(trigger, 'pressure'); recoveries++; return { summarySeq: 10 } } }) }
+  await f.begin()
+  for (let i = 0; i < 10; i++) {
+    f.events.push({ type: 'assistant/message', data: { message: { content: [{ type: 'text', text: '会话预算耗尽。' }] } } })
+    await f.stop()
+  }
+  const state = (await f.manager.status(f.exec)).reconstruction
+  assert.equal(state.phase, 'paused'); assert.equal(state.reason, 'stalled')
+  assert.equal(state.checkpoint, join(f.workspace, 'scene.blend'))
+  assert.equal(recoveries, 1); assert.equal(f.steered.length, 4)
+  assert.ok(f.steered.some(message => message.source.state.continuation_health?.recovery?.status === 'compacted'))
+  await assert.rejects(f.begin(), /direct user continuation/u)
+  f.events.push({ type: 'user/message', data: { source: { kind: 'user' } } })
+  await f.begin(); assert.equal((await f.manager.status(f.exec)).status, 'active')
+})
+
+test('status/begin calls and identical repeated operations preserve the stall counter', async () => {
+  const f = await fixture(); await f.begin()
+  let id = 0
+  const completed = (name, args, value) => {
+    const callId = `call-${id++}`
+    f.events.push({ type: 'tool/call', data: { callId, name, arguments: JSON.stringify(args) } },
+      { type: 'tool/result', data: { message: { toolCallId: callId, isError: false, content: [{ type: 'text', text: JSON.stringify(value) }] } } })
+  }
+  for (let i = 0; i < 12; i++) {
+    await f.begin()
+    completed('review_reconstruction', { action: 'status' }, { status: 'active' })
+    completed('blender_status', {}, { available: true })
+    completed('read_image', { file_path: 'front.png' }, { attachmentId: 'same-image' })
+    await f.stop()
+    if ((await f.manager.status(f.exec)).status === 'paused') break
+  }
+  assert.equal((await f.manager.status(f.exec)).reconstruction.reason, 'stalled')
+})
+
+test('failed or unavailable context recovery stays bounded and retains incomplete acceptance', async () => {
+  for (const service of [undefined, { async compactIfNeeded() { throw Error('Summary service unavailable') } }]) {
+    const f = await fixture(); f.agent.ctx = { get: () => service }; await f.begin()
+    for (let i = 0; i < 8; i++) await f.stop()
+    assert.equal((await f.manager.status(f.exec)).reconstruction.reason, 'stalled')
+    assert.equal(f.steered.length, 4)
+  }
+})
+
+test('cancellation and queued user work during context recovery receive control immediately', async () => {
+  for (const kind of ['cancel', 'human', 'dispose']) {
+    const f = await fixture(), abort = new AbortController(); await f.begin()
+    f.agent.ctx = { get: () => ({ async compactIfNeeded() {
+      if (kind === 'cancel') abort.abort(new Error('Stopped'))
+      if (kind === 'human') f.agent.inbox.nextTurn.push({ source: { kind: 'user' } })
+      if (kind === 'dispose') for (const dispose of f.cleanup) dispose()
+      return null
+    } }) }
+    await f.stop(abort.signal); await f.stop(abort.signal)
+    const before = f.steered.length
+    await f.stop(abort.signal)
+    assert.equal(f.steered.length, before)
+  }
 })

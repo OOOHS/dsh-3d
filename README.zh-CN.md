@@ -64,6 +64,8 @@ Blender 可在 PATH 中提供，也可在 web profile 的 `cordis.patch.yml` 中
 
 `continueUntilApproved` 默认开启。`reviewContinuationBudgetMs` 默认为 0，沿用宿主与用户的资源限制；正数可配置显式的持续运行时间预算。评审耗尽本轮恢复预算后返回 `unavailable`，保留 `awaiting-review` 状态并允许重新评审；用户停止会终止当前回合。恢复会话后保留普通会话记录中的编辑检查点，收到用户继续指令后通过 `action: "begin"` 恢复推进。公开钩子会在提前收尾的文字之后追加后续工作，聊天记录会保留这些中间消息。
 
+自动收尾时，插件会核对新的成功工具操作和已保存场景内容。连续三个结束边界处于停滞状态时，控制器在其中安排一次有时限的上下文恢复；恢复后仍无进展则暂停，保留当前检查点与未完成的验收状态。状态查询、重复提交相同证据会保留停滞计数；实际工作会清零计数。建模配置通过原生局部服务在 60% 上下文压力时压缩历史。检测与恢复均使用 dsh 公开接口，暂停通知保存在普通会话记录中。
+
 画笔提交后的场景会成为当前编辑检查点；后续插件 Python 修改使用这个文件作为 `blend_path`，使雕刻与代码修改可以累积。各区域的形态依据参考图中观察到的非对称关系分别塑造。
 
 建模说明允许自由组合原生笔刷、网格编辑、曲线、修改器、Geometry Nodes 和 Python；上游配方作为可选参考，通过工程快照和视觉验收记录结果。
@@ -89,6 +91,7 @@ pnpm test
 
 ```sh
 pnpm test:review-agent /absolute/path/to/dsh-host /absolute/path/to/python-with-Pillow
+pnpm test:continuation /absolute/path/to/dsh-host
 ```
 
 可选的本机集成检查：
