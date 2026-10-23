@@ -6,6 +6,28 @@ A [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) plugin for
 
 DSH 3D is developed from [CheshireJCat/blender](https://github.com/CheshireJCat/blender) (`dsh-blender` 0.2.3, commit `9bd95e97a61096cfae1edb0f88fcd2be54b0adee`). The upstream Git history, license files, skills, tools, and analysis helpers are preserved.
 
+## Design principles
+
+DSH 3D aims to give agents a broad modeling environment, useful feedback and room to improve their own methods. Three principles guide development:
+
+### 1. Continuous improvement: GRM in the loop and reusable code
+
+Keep a generative reviewer in the loop. The current implementation uses an independent visual review agent to compare the reference with genuine renders, explain differences and judge acceptance. The modeler can use that feedback to revise geometry, representations or methods. Each assessment starts with fresh, frozen evidence; final acceptance applies to the selected scene and its renders. Ongoing work respects user cancellation, resource limits and stalled-progress handling.
+
+Let useful work accumulate as reusable code. Agents can create, call and modify project tools during execution, retaining useful implementations together with observations and conditions of use. Code and brush edits share a live scene, so further work can build on existing geometry. This creates two opportunities for improvement: better assets through feedback, and better working methods through reusable tools.
+
+### 2. Tool scaling: expand the agent's range of actions
+
+Grow the coverage, composability and discoverability of operations. Python editing, native brushes, scene inspection, view control, image crops and checkpoints give agents ways to construct, reshape, observe and revisit geometry. Python and brushes have overlapping modeling scope and can alternate throughout a task.
+
+Keep the default entry points compact, make detailed capabilities discoverable, and let agents compose operations into their own tools. Runtime-editable project code extends the action space as the task develops. Evaluate these capabilities through actual geometry changes and visual outcomes.
+
+### 3. Skill pruning: give exploration to the agent
+
+Keep the main skill focused on goals, available capabilities, execution contracts and acceptance evidence. Put detailed protocols and specialist references within reach as needed. Let the agent choose representations, component boundaries, methods, work order, experiments and candidate comparisons.
+
+Review feedback and observed results guide those choices. Agents can revise their tools and approaches as they learn from the task; checkpoints preserve alternatives for comparison and recovery. The plugin supplies persistent state, feedback and room for exploration. The agent develops its working process within that environment.
+
 ## Status
 
 The development version provides a shared live Blender workspace. Agents can alternate incremental Python, native brushes and visual observations, save alternatives, and create or revise reusable project tools during execution. Methods and work order remain agent decisions.
