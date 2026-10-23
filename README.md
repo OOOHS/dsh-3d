@@ -12,12 +12,22 @@ The development version adds persistent native sculpting and live viewport feedb
 
 Current capabilities include:
 
-- 17 tools: the 13 upstream Blender tools, `blender_sculpt`, `blender_view`, `review_reconstruction`, and shared `inspect_image`.
+- 18 tools: the 13 upstream Blender tools, `blender_sculpt`, `blender_view`, `review_reconstruction`, shared `inspect_image`, and `blender_checkpoint`.
 - Independent native DSH modeler/reviewer presets. The scoped reviewer receives observation and structured submission tools.
 - One concise modeling skill by default, with native brush guidance and optional reference-analysis helpers. The 29 upstream domain skills remain available through `registerModuleSkills: true` for legacy use.
 - 26 analysis and validation helpers, with 23 enabled by default.
 
 The local development setup has exercised plugin loading, cube creation, rendering, GLB export and clean re-import, and an image-analysis helper using dsh `0.2.1-alpha.2` and Blender `5.2.2 LTS` on macOS ARM64. The historical [upstream compatibility report](docs/compatibility-v0.2.3.md) records the original project's separate validation.
+
+## Exploring methods and candidates
+
+The model chooses and revises its methods, work order and component boundaries. The main skill describes goals, capabilities and acceptance evidence; exploration timing, candidate count and intermediate review timing remain agent decisions.
+
+`blender_checkpoint` provides independent `save`, `list`, `get` and `restore` operations. It archives scenes, packable resources, optional comparison images and free-form notes; `parent_id` records a candidate's origin. Any saved alternative can be restored into a working file, including earlier candidates after a sculpt commit. Final acceptance validates the selected current scene and render hashes.
+
+Brush views highlight the target in orange, show context in gray, and return projected bounds and raycast-confirmed surface samples. `isolate` displays a component alone; `probe_points` returns hit objects, world locations and normals for image coordinates. Display colors are temporary. Fourteen native geometry brushes cover contour, volume, creases, pinching and surface shaping. The current brush bridge still requires fixed-topology base meshes.
+
+File tools can inspect or branch saved scenes while a live brush copy is open. Commit publishes live shaping as a saved candidate. Preview and render tools return direct images when the host attachment service is available.
 
 ## Installation from source
 

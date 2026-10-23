@@ -20,6 +20,8 @@ const required = [
   'lib/reconstruction-review.js',
   'lib/reconstruction-session.js',
   'lib/continuation-guard.js',
+  'lib/checkpoints.js',
+  'lib/brushes.json',
   'lib/inspect-image.js',
   'lib/agent-config.js',
   'lib/agent-role.js',

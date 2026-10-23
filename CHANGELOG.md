@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.2.3-dev.9 - 2026-10-23
+
+- Let modelers revise methods, work orders and component boundaries during exploration. Keep a single concise skill and free-form candidate notes.
+- Remove the latest-sculpt-checkpoint lock on editing and review; retain final artifact/hash validation and workspace boundaries. Saved scenes remain inspectable and branchable during an isolated brush session.
+- Add independent workspace checkpoints with resource packing, evidence snapshots, parent links, hashes and restore into a working scene.
+- Return preview/render image attachments directly when supported by the host.
+- Highlight sculpt targets and return projected bounds, confirmed surface samples, optional isolation and non-mutating coordinate probes. Expand the native geometry brushes from four to fourteen.
+
 ## 0.2.3-dev.8 - 2026-10-22
 
 - Detect stalled automatic endings from successful new tool operations and saved scene bytes. Repeated prose, status calls and unchanged review evidence preserve the idle counter.

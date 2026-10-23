@@ -14,6 +14,7 @@ import { createReviewTool } from './lib/reconstruction-review.js'
 import { ReconstructionSessions } from './lib/reconstruction-session.js'
 import { MODELER_AGENT, REVIEWER_AGENT, agentSchema, agentSettings, registerAgentPresets } from './lib/agent-config.js'
 import { createInspectImageTool } from './lib/inspect-image.js'
+import { createCheckpointTool } from './lib/checkpoints.js'
 
 export const name = 'dsh-3d'
 export const inject = ['tools', 'skills']
@@ -55,7 +56,7 @@ const SUPPORTED_IMPORTS = new Set([...SUPPORTED_EXPORTS, '.dae'])
 const SUPPORTED_RENDERS = new Set(['.png', '.jpg', '.jpeg'])
 const MODULE_RUNTIME_PREAMBLE = `## DeepSeek Harness runtime mapping
 
-Use create-3d-model as the current plugin guide. Choose native Blender methods freely and treat this legacy module as optional technical reference. Native brush edits can improve local forms when scripted adjustments stall. See references/sculpting.md in create-3d-model for the editing contract. Completion of an image reconstruction requires review_reconstruction approval of the current final artifacts. Discover this module's helpers with blender_helper_catalog({ module: "<this skill name>" }) and execute them with blender_helper_run.`
+Use create-3d-model as the current plugin guide. Choose native Blender methods freely and treat this legacy module as optional technical reference. Choose and revise your own methods and work order; native brushes and code are available throughout modeling. See references/sculpting.md in create-3d-model for the editing contract. Completion of an image reconstruction requires review_reconstruction approval of the current final artifacts. Discover this module's helpers with blender_helper_catalog({ module: "<this skill name>" }) and execute them with blender_helper_run.`
 
 const sceneSchema = {
   type: 'object',
@@ -564,7 +565,7 @@ function createTools(config) {
 
   tools.push(defineTool({
     name: 'blender_status',
-    description: 'Check whether Blender is available and report its version plus the current dsh workspace root. Call this before the first modeling operation.',
+    description: 'Check whether Blender is available and report its version plus the current dsh workspace root. Use this to discover the local runtime.',
     parameters: {},
     output: {
       schema: {
@@ -750,7 +751,7 @@ function createTools(config) {
         script: { type: 'string', required: true, description: 'bpy/bmesh operations on the loaded scene. Choose the intended component scope and preserve useful existing geometry and local shaping.' },
         save_path: { type: 'string', required: true, description: 'New versioned .blend output path inside the current dsh workspace.' },
         blend_path: { type: 'string', description: 'Current workspace .blend to load before running the code, including prior brush edits. Omit when creating a new scene.' },
-        allow_overwrite: { type: 'boolean', description: 'Allow replacing save_path. Defaults to false and should be used only with explicit user intent.' },
+        allow_overwrite: { type: 'boolean', description: 'Allow replacing save_path. Defaults to false; choose deliberately when replacing a working candidate.' },
       },
       output: {
         schema: {
@@ -798,7 +799,7 @@ function createTools(config) {
 
   tools.push(defineTool({
     name: 'blender_preview',
-    description: 'Create a temporary camera-and-light preview from a .blend without modifying the saved scene. Supports isometric, front, back, left, right, top, and bottom views and can frame named objects. Call read_image on imagePath after success.',
+    description: 'Create a temporary camera-and-light preview from a .blend without modifying the saved scene. Supports isometric, front, back, left, right, top, and bottom views and can frame named objects. Returns an image directly when the host attachment service is available, plus imagePath.',
     parameters: {
       blend_path: { type: 'string', required: true, description: 'Existing .blend file inside the workspace.' },
       output_path: { type: 'string', required: true, description: 'New PNG or JPEG preview path inside the workspace.' },
@@ -863,7 +864,7 @@ function createTools(config) {
 
   tools.push(defineTool({
     name: 'blender_render',
-    description: 'Render a Blender scene to PNG or JPEG for visual QA. After this succeeds, call read_image on imagePath and actually inspect the image before claiming visual completion.',
+    description: 'Render a Blender scene to PNG or JPEG for visual QA. Returns an image directly when the host attachment service is available, plus imagePath for further inspection.',
     parameters: {
       blend_path: { type: 'string', required: true, description: 'Existing .blend file inside the current dsh workspace.' },
       output_path: { type: 'string', required: true, description: 'New .png, .jpg, or .jpeg output inside the workspace.' },
@@ -1234,9 +1235,30 @@ export function apply(ctx, config) {
   }, () => ctx.get?.('attachments')) : undefined
   ctx.effect?.(() => () => sessions?.dispose())
   const reconstruction = new ReconstructionSessions(ctx, config, { resolve: resolveWorkspacePath }, sessions)
+  const observeRender = tool => {
+    if (!['blender_preview', 'blender_render'].includes(tool.name)) return tool
+    return { ...tool, output: { ...tool.output,
+      schema: { ...tool.output.schema, properties: { ...tool.output.schema.properties,
+        attachment: { type: 'object', additionalProperties: true } } },
+      render: (_args, value) => [{ type: 'text', text: JSON.stringify({ ...value, attachment: undefined }, null, 2) },
+        ...(value.attachment ? [{ type: 'image', attachment: value.attachment }] : [])],
+    }, async execute(args, exec) {
+      const value = await tool.execute(args, exec)
+      const attachments = exec.agent?.ctx?.get?.('attachments') ?? ctx.get?.('attachments')
+      if (!attachments?.saveImage) return value
+      try {
+        const ref = await attachments.saveImage({ data: await readFile(value.imagePath, { signal: exec.signal }),
+          mediaType: extname(value.imagePath).toLowerCase() === '.png' ? 'image/png' : 'image/jpeg', name: basename(value.imagePath) })
+        return { ...value, attachment: { attachmentId: ref.attachmentId, mediaType: ref.mediaType,
+          bytes: ref.bytes, width: ref.width, height: ref.height, ...(ref.name ? { name: ref.name } : {}) } }
+      } catch (error) {
+        exec.signal?.throwIfAborted()
+        return { ...value, log: value.log + `\nImage attachment unavailable: ${String(error.message).slice(0, 300)}. Observe imagePath with inspect_image.` }
+      }
+    } }
+  }
   const wrap = (tool, fileBased = true) => ({ ...tool, async execute(args, exec) {
     const execute = async () => {
-      await reconstruction.before(tool.name, args, exec)
       const value = await tool.execute(args, exec)
       reconstruction.changed(tool.name, args, value, exec)
       return value
@@ -1247,8 +1269,16 @@ export function apply(ctx, config) {
     }) : execute()
   } })
   for (const tool of createTools(config)) {
-    ctx.tools.register(wrap(tool))
+    ctx.tools.register(wrap(observeRender(tool)))
   }
+  ctx.tools.register(wrap(createCheckpointTool(config, {
+    resolve: resolveWorkspacePath, file: assertRegularFile,
+    writable: (path, overwrite) => assertWritableTarget(path, overwrite, 'save_path'),
+    snapshot: (source, target, exec) => runBlender(config, exec, 'execute', {
+      script: 'bpy.ops.file.pack_all()', workspace: sessionWorkspace(exec),
+      input_path: source, output_path: target,
+    }, source),
+  })))
   if (sessions) for (const tool of createSculptTools(sessions)) ctx.tools.register(wrap(tool, false))
   if (config.enableReview !== false) ctx.tools.register(createReviewTool(ctx, config, {
     resolve: resolveWorkspacePath,

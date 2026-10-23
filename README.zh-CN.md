@@ -12,12 +12,22 @@
 
 当前能力包括：
 
-- 17 个工具：上游的 13 个 Blender 工具，加上 `blender_sculpt`、`blender_view`、`review_reconstruction` 和共享的 `inspect_image`。
+- 18 个工具：上游的 13 个 Blender 工具，加上 `blender_sculpt`、`blender_view`、`review_reconstruction` 、共享的 `inspect_image` 和 `blender_checkpoint`。
 - 两份独立的原生 agent 配置：DSH 3D 建模与 DSH 3D 评审。评审角色提供图像观察和结构化提交两个工具。
 - 默认提供 1 个精简建模 skill，附带原生画笔说明和可选分析工具。29 个上游领域 skill 保留为兼容资料，可通过 `registerModuleSkills: true` 显式启用。
 - 26 个分析与验证 helper，默认启用其中 23 个。
 
 本地已在 macOS ARM64、dsh `0.2.1-alpha.2`、Blender `5.2.2 LTS` 下验证插件加载、立方体创建、渲染、GLB 导出与干净回读，以及图像分析 helper。[上游兼容性报告](docs/compatibility-v0.2.3.md) 另行保留原项目的历史验证记录。
+
+## 方法与候选探索
+
+模型可以在迭代中调整建模方法、工作顺序与组件边界。主 skill 描述目标、可用能力和验收依据；候选数量、探索时机和评审时机由模型选择。
+
+`blender_checkpoint` 独立提供 `save`、`list`、`get`、`restore`：归档工程、可打包资源、可选对照图片与方法备注，用 `parent_id` 记录来源；任意候选都可以恢复到工作文件继续编辑。雕刻提交后的场景同样可以作为分支起点，较早候选也保持可用。最终验收核对所选工程和渲染的当前哈希。
+
+画笔视图默认用橙色标出目标、灰色显示上下文，返回目标的屏幕范围与射线确认的表面点；`isolate` 可独立观察组件，`probe_points` 可查询图像坐标命中的对象、位置与法线。显示颜色为临时观察效果，原场景材质保持原值。原生几何笔刷扩展为 14 种，覆盖体积、轮廓、尖锐褶线、收拢和表面塑形。固定拓扑基础网格仍是当前桥接接口的数据要求。
+
+画笔会话打开期间，文件工具可以观察或分支编辑已保存的场景；`commit` 将内存中的画笔结果保存成候选。`blender_preview` 与 `blender_render` 在宿主提供附件服务时直接返回图像，降低连续观察的调用成本。
 
 ## 从源码安装
 

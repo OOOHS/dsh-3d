@@ -53,7 +53,7 @@ test('missing review evidence and live brush edits each keep acceptance pending'
   await f.stop(); assert.equal(f.steered.length, 1)
   f.manager.reviewed(await f.review(), f.exec)
   f.sculpt.sessions.set('session', { id: 'edit' })
-  await f.stop(); assert.match(f.steered.at(-1).content[0].text, /active brush edit/u)
+  await f.stop(); assert.equal(f.steered.length, 2)
   await assert.rejects(f.manager.prepareReview({ reference_path: 'reference.png', blend_path: 'scene.blend' }, f.exec), /Commit or discard/u)
 })
 
@@ -101,16 +101,15 @@ test('restored sessions preserve checkpoints and resume only after fresh human i
   assert.equal((await restored.status({ ...f.exec, agent: other })).status, 'inactive')
 })
 
-test('brush commits become the editing source and stale inputs are rejected', async () => {
+test('brush candidates can be revisited and selected for review without locking exploration to the latest edit', async () => {
   const f = await fixture(); await f.begin()
   f.manager.changed('blender_sculpt', { action: 'commit' }, { saved_path: join(f.workspace, 'sculpt.blend') }, f.exec)
-  await assert.rejects(f.manager.before('blender_python', {}, f.exec), /preserve its native brush edits/u)
-  await assert.rejects(f.manager.before('blender_sculpt', { action: 'begin', blend_path: 'scene.blend' }, f.exec), /preserve/u)
-  await f.manager.before('blender_python', { blend_path: 'sculpt.blend' }, f.exec)
-  await f.manager.before('blender_scene_info', { blend_path: 'scene.blend' }, f.exec)
-  await assert.rejects(f.manager.prepareReview({ reference_path: 'reference.png', blend_path: 'scene.blend' }, f.exec), /current brush-edited/u)
-  f.manager.changed('blender_python', {}, { blendPath: join(f.workspace, 'scene.blend') }, f.exec)
-  await f.manager.before('blender_python', { blend_path: 'scene.blend' }, f.exec)
+  await f.manager.prepareReview({ reference_path: 'reference.png', blend_path: 'scene.blend' }, f.exec)
+  assert.equal(f.manager.state(f.agent).checkpoint, join(f.workspace, 'scene.blend'))
+  await f.manager.begin({ reference_path: 'reference.png', blend_path: 'sculpt.blend' }, f.exec)
+  f.manager.changed('blender_checkpoint', { action: 'restore' }, { blendPath: join(f.workspace, 'scene.blend') }, f.exec)
+  assert.equal(f.manager.state(f.agent).checkpoint, join(f.workspace, 'scene.blend'))
+  assert.equal(f.manager.state(f.agent).sculpted, false)
 })
 
 test('reference identity and current scene are bound before an independent review', async () => {

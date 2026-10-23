@@ -42,6 +42,7 @@ test('registers one default modeling skill and all Blender production tools', ()
     'blender_validate_export',
     'blender_helper_catalog',
     'blender_helper_run',
+    'blender_checkpoint',
     'blender_sculpt',
     'blender_view',
     'review_reconstruction',

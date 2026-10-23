@@ -21,8 +21,9 @@ parser.add_argument('--config', required=True)
 args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
 config = json.loads(Path(args.config).read_text())
 root = Path(config['directory'])
-BRUSHES = {'draw': 'Draw', 'grab': 'Grab', 'smooth': 'Smooth', 'inflate': 'Inflate/Deflate'}
-state = {'revision': 0, 'cursor': 0, 'hashes': [], 'view_id': None, 'closed': False}
+BRUSHES = config['brushes']
+state = {'revision': 0, 'cursor': 0, 'hashes': [], 'view_id': None, 'closed': False,
+         'highlight': True, 'isolate': False}
 last_activity = time.monotonic()
 last_recovery = 0
 
@@ -73,6 +74,52 @@ def recovery():
     journal('recovery', revision=state['revision'])
 
 
+def surface_hit(point, region, rv):
+    mouse = (point[0] * region.width, (1 - point[1]) * region.height)
+    origin = view3d_utils.region_2d_to_origin_3d(region, rv, mouse)
+    direction = view3d_utils.region_2d_to_vector_3d(region, rv, mouse)
+    obj = object_now()
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    if state['isolate']:
+        evaluated = obj.evaluated_get(depsgraph)
+        inverse = evaluated.matrix_world.inverted()
+        hit, location, normal, face = evaluated.ray_cast(inverse @ origin, inverse.to_3x3() @ direction)
+        location = evaluated.matrix_world @ location
+        normal = (evaluated.matrix_world.inverted().transposed().to_3x3() @ normal).normalized()
+        hit_obj = obj
+    else:
+        hit, location, normal, face, hit_obj, _ = bpy.context.scene.ray_cast(depsgraph, origin, direction)
+    return {'point': list(point[:2]), 'hit': bool(hit),
+            'object_name': hit_obj.original.name if hit and hit_obj else None,
+            'target': bool(hit and hit_obj and hit_obj.original == obj),
+            'location': list(location) if hit else None,
+            'normal': list(normal) if hit else None, 'face_index': face if hit else None}
+
+
+def target_evidence(region, rv):
+    obj = object_now()
+    projected = [view3d_utils.location_3d_to_region_2d(region, rv, obj.matrix_world @ Vector(corner))
+                 for corner in obj.bound_box]
+    points = [p for p in projected if p is not None]
+    if not points:
+        return {'object_name': obj.name, 'screen_bounds': None, 'surface_samples': []}
+    bounds = [min(p.x for p in points) / region.width, 1 - max(p.y for p in points) / region.height,
+              max(p.x for p in points) / region.width, 1 - min(p.y for p in points) / region.height]
+    left, top, right, bottom = [max(0, min(1, value)) for value in bounds]
+    samples = []
+    if right > left and bottom > top:
+        for y in (0.5, 0.3, 0.7, 0.1, 0.9):
+            for x in (0.5, 0.3, 0.7, 0.1, 0.9):
+                hit = surface_hit([left + (right-left)*x, top + (bottom-top)*y], region, rv)
+                if hit['target']:
+                    samples.append(hit)
+                if len(samples) >= 9:
+                    break
+            if len(samples) >= 9:
+                break
+    return {'object_name': obj.name, 'screen_bounds': bounds, 'surface_samples': samples}
+
+
 def observe():
     with viewport() as (area, region, rv):
         rv.update()
@@ -83,13 +130,24 @@ def observe():
         path = root / ('view-' + view_id + '.png')
         width = min(1024, region.width)
         height = max(1, round(width * region.height / region.width))
+        shading = area.spaces.active.shading
+        old_shading = (shading.type, shading.color_type)
+        old_colors = [(obj, tuple(obj.color)) for obj in bpy.context.scene.objects] if state['highlight'] else []
         try:
+            if state['highlight']:
+                shading.type, shading.color_type = 'SOLID', 'OBJECT'
+                target = object_now()
+                for obj, _ in old_colors:
+                    obj.color = (1.0, 0.35, 0.06, 1.0) if obj == target else (0.35, 0.39, 0.44, 1.0)
             render.filepath = str(path)
             render.resolution_x, render.resolution_y = width, height
             render.resolution_percentage = 100
             render.image_settings.file_format = 'PNG'
             bpy.ops.render.opengl(write_still=True, view_context=True)
         finally:
+            for obj, color in old_colors:
+                obj.color = color
+            shading.type, shading.color_type = old_shading
             (render.filepath, render.resolution_x, render.resolution_y,
              render.resolution_percentage, render.image_settings.file_format) = old
         state['view_id'] = view_id
@@ -97,7 +155,10 @@ def observe():
         return {'view_id': view_id, 'revision': state['revision'], 'path': str(path),
                 'width': width, 'height': height, 'coordinates': 'normalized, origin top-left',
                 'rotation': list(rv.view_rotation), 'location': list(rv.view_location),
-                'distance': rv.view_distance, 'projection': rv.view_perspective}
+                'distance': rv.view_distance, 'projection': rv.view_perspective,
+                'highlight': state['highlight'], 'isolate': state['isolate'],
+                'display': 'Orange target, gray context; temporary geometry colors' if state['highlight'] else 'Scene viewport appearance',
+                'target': target_evidence(region, rv)}
 
 
 def view_signature(rv, region):
@@ -117,6 +178,13 @@ def result(image=True, **extra):
 
 def set_view(command):
     with viewport() as (area, region, rv):
+        if 'highlight' in command:
+            state['highlight'] = command['highlight']
+        if 'isolate' in command:
+            wanted = command['isolate']
+            if bool(area.spaces.active.local_view) != wanted:
+                bpy.ops.view3d.localview(frame_selected=False)
+            state['isolate'] = wanted
         if command.get('preset'):
             bpy.ops.view3d.view_axis(type=command['preset'].upper(), align_active=False)
         if command.get('frame'):
@@ -173,16 +241,13 @@ def stroke(command):
         points = command['points']
         elems = []
         hits = 0
-        depsgraph = bpy.context.evaluated_depsgraph_get()
         for i, point in enumerate(points):
             mouse = (point[0] * region.width, (1 - point[1]) * region.height)
-            origin = view3d_utils.region_2d_to_origin_3d(region, rv, mouse)
-            direction = view3d_utils.region_2d_to_vector_3d(region, rv, mouse)
-            hit, location, normal, face, hit_obj, matrix = bpy.context.scene.ray_cast(depsgraph, origin, direction)
-            if hit and hit_obj.original == obj:
+            hit = surface_hit(point, region, rv)
+            if hit['target']:
                 hits += 1
             elems.append({'name': 'dsh', 'mouse': mouse, 'mouse_event': mouse,
-                          'location': tuple(location) if hit else (0, 0, 0),
+                          'location': tuple(hit['location']) if hit['hit'] else (0, 0, 0),
                           'pressure': point[2] if len(point) == 3 else 1.0,
                           'size': float(radius), 'time': i * 0.04, 'is_start': i == 0,
                           'x_tilt': 0.0, 'y_tilt': 0.0})
@@ -231,11 +296,15 @@ def execute(command):
         history(action)
     elif action == 'view':
         set_view(command)
+        if command.get('probe_points'):
+            with viewport() as (_, region, rv):
+                extra['probes'] = [surface_hit(point, region, rv) for point in command['probe_points']]
     elif action == 'commit':
         path = Path(command['save_path'])
         if path.exists() and not command.get('allow_overwrite'):
             raise ValueError('save_path already exists; choose a new path or allow_overwrite.')
         with viewport():
+            set_view({'isolate': False})
             bpy.ops.object.mode_set(mode='OBJECT')
             bpy.ops.wm.save_as_mainfile(filepath=str(path), check_existing=False)
         state['closed'] = True
@@ -333,7 +402,8 @@ def initialize():
             bpy.ops.object.mode_set(mode='SCULPT')
             if obj.use_dynamic_topology_sculpting:
                 raise ValueError('Disable Dynamic Topology before begin; this interface preserves mesh topology.')
-            set_view({'preset': config.get('preset', 'front'), 'frame': True, 'projection': 'ORTHO'})
+            set_view({'preset': config.get('preset', 'front'), 'frame': True, 'projection': 'ORTHO',
+                      'highlight': config.get('highlight', True), 'isolate': config.get('isolate', False)})
             rv.view_distance *= 1.15
             rv.update()
             state['hashes'] = [mesh_info()['geometry_hash']]

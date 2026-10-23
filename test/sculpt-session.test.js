@@ -33,7 +33,8 @@ test('ownership, file locks and source-preserving commit retain the live session
   const session = { id: 'edit', owner: 'owner', source: await realpath(join(workspace, 'input.blend')) }
   manager.sessions.set('owner', session)
   await assert.rejects(manager.run({ action: 'status', edit_id: 'edit' }, exec(workspace, 'other')), /belongs/u)
-  await assert.rejects(manager.guard('blender_scene_info', { blend_path: 'input.blend' }, exec(workspace)), /active/u)
+  await manager.guard('blender_scene_info', { blend_path: 'input.blend' }, exec(workspace))
+  await manager.guard('blender_python', { blend_path: 'input.blend', save_path: 'branch.blend' }, exec(workspace))
   await assert.rejects(manager.guard('blender_python', { save_path: 'input.blend' }, exec(workspace, 'other')), /locked/u)
   await manager.guard('blender_status', {}, exec(workspace))
   await assert.rejects(manager.run({ action: 'commit', edit_id: 'edit', save_path: 'input.blend' }, exec(workspace)), /new .blend/u)

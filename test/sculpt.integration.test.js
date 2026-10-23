@@ -75,7 +75,7 @@ test('native sculpt: four brushes, fresh images, history, retry, commit and disc
     }
     assert.equal(value.pid, pid)
     const finalHash = value.geometry_hash
-    await assert.rejects(run('blender_scene_info', { blend_path: 'sphere.blend' }), /Editing session/u)
+    assert.equal((await run('blender_scene_info', { blend_path: 'sphere.blend' })).scene.objectCount, 1)
     await assert.rejects(tools.get('blender_sculpt').execute({ action: 'status', edit_id: editId }, {
       ...exec, agent: { session: { header: { id: randomUUID(), cwd: workspace } } },
     }), /belongs/u)

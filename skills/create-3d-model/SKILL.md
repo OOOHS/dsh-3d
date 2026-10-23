@@ -1,32 +1,29 @@
 ---
 name: create-3d-model
-description: Create and refine editable Blender models from text or images. Use for 3D reconstruction, native sculpting, mesh edits, materials, rendering and export.
+description: Create and refine editable Blender models from text or images, using native geometry tools, brushes and code with visual feedback.
 ---
 
 # Blender modeling and reconstruction
 
-Produce editable three-dimensional geometry faithful to the user's reference and requested quality. Choose and combine native Blender techniques freely: mesh editing, brushes, curves, modifiers, Geometry Nodes and Python.
+Build editable three-dimensional geometry faithful to the user's reference and requested quality. Choose and revise your own methods, work order and component boundaries as you learn from the scene. Native mesh editing, brushes, curves, modifiers, Geometry Nodes and Python can be combined throughout modeling.
 
-Maintain a current editable scene throughout the task. Apply code and brush edits to that scene, preserving useful existing geometry and local shaping. Keep components independently addressable when useful; create, shape and assemble them as the model develops. Choose the scope of regeneration deliberately.
+Use iterations to explore materially different methods or work orders as well as refine a candidate. A persistent discrepancy is useful evidence for reconsidering the representation or approach. Choose the scope and timing of trials yourself; existing components can be reused across alternatives. Keep useful candidates and observations so you can compare approaches and return to a better version.
 
-## Working with the tools
+## Available capabilities
 
-- Inspect the reference and call `blender_status` before modeling. Copy external reference files into the workspace for the workspace-scoped tools, preserving originals.
-- For image reconstruction, register the workspace reference with `review_reconstruction({action: "begin", reference_path: "..."})` before modeling. Supply `blend_path` when continuing an existing scene. Use `action: "status"` to recover the current checkpoint and acceptance state.
-- Choose methods by the current shape problem. Code supports precise construction, topology and assembly; brushes support direct local contours, soft volume and irregular organic forms. When a visible defect persists across edits, reassess the method and the geometry representation.
-- Observe corresponding sides separately and preserve the reference's differences in contour, flow, pose, layering and occlusion. Shape each region according to its visible evidence.
-- `blender_sculpt({action: "begin", blend_path: "...", object_name: "..."})` opens a component and immediately returns its viewport image; each stroke returns fresh image feedback. Use Grab for contour changes, Draw/Inflate for volume and Smooth for surface shaping, with undo/discard available while exploring. `blender_view` adds optional viewpoints. Read [sculpting.md](references/sculpting.md) for mesh preparation and coordinates; commit before continuing file-based edits.
-- Continue Python edits with `blend_path` set to the current `.blend`; the tool loads its existing objects and sculpted meshes before running code. A brush commit saves an intermediate scene that can receive further code edits or another brush session, including edits to other components.
-- Use `inspect_image` for full images and normalized region crops with zoom. Inspect rendered images, preserve useful viewpoints across iterations, and save versioned `.blend` checkpoints. Let the visible result guide technique changes.
-- Read [dsh-integration.md](references/dsh-integration.md) when tool details are useful. The helper catalog provides optional reference-analysis utilities.
+- `blender_status` describes the local Blender runtime. `blender_scene_info` and `blender_object_info` reveal names, transforms, bounds, topology and materials.
+- `blender_python` edits any supplied `blend_path` with bpy/bmesh, or starts a new scene when that input is omitted. Saved mesh data remains editable after sculpting. Choose an earlier candidate or the current scene according to your intended edit.
+- `blender_sculpt` opens a saved component and returns its highlighted viewport, projected bounds and confirmed surface points. Native brushes support direct contour, volume and surface changes. You can enter at any useful point, continue strokes, undo/redo, save a candidate with `commit` or abandon a trial with `discard`. `blender_view` controls the view, isolation, highlighting and coordinate probes. Read [sculpting.md](references/sculpting.md) for coordinates and actual mesh prerequisites.
+- `blender_checkpoint` saves candidates with optional method notes, parent links and comparison images. `list`/`get` recover them; `restore` opens any candidate into a working file. Ordinary versioned files and project notes are also available. Choose how to organize your exploration.
+- `blender_preview`, `blender_render` and `inspect_image` provide views and local crops for comparing shape, placement and appearance. Preserve comparable viewpoints where useful and inspect other angles to understand three-dimensional structure.
+- `web_search` and `web_fetch` can supply Blender knowledge and supplementary references. Keep the user's reference as the primary target, record useful sources and distinguish visible evidence from inferred geometry.
 
-## References and learning
+Tool details and optional analysis helpers are described in [dsh-integration.md](references/dsh-integration.md). Legacy modules provide optional technical references. Verified techniques and observations can be retained in project notes for later decisions.
 
-- Use `web_search` and `web_fetch` when additional visual references or Blender knowledge would help. Check that supplementary images depict the same subject and version; record source URLs and distinguish observed details from inferred geometry. Keep the user's image as the primary visual target.
-- Preserve successful techniques and verified findings in concise project notes with evidence. Reusable lessons can become skills after practical validation.
+## Acceptance and delivery
 
-## Completion
+For image reconstruction, copy the reference into the workspace and register it with `review_reconstruction({action: "begin", reference_path: "..."})`. An optional `blend_path` selects an existing candidate. Workspaces scope tool paths and preserve original inputs.
 
-Apply a high standard to fidelity and overall visual quality. Submit the current saved `.blend` and genuine comparable model renders to `review_reconstruction`. The plugin keeps a registered reconstruction active until a successful `approved: true` report matches these current artifacts. Use review feedback to improve the result and submit changed artifacts for a fresh review. Each assessment uses a fresh review agent with image inspection and a structured submission tool. An `unavailable` assessment retains pending acceptance; retry the review when evidence and service are available. Runtime context recovery and a bounded stall guard support continuation. A paused task retains its checkpoint and an actionable blocker. User cancellation and configured resource limits preserve an incomplete task; resume it with `action: "begin"` when the user continues the work.
+Apply a high standard to visual fidelity and craftsmanship. Use review feedback as evidence for your next decision: refinement, another method, a different work order or a return to a saved candidate. Each review uses a fresh independent agent. Final acceptance requires an `approved: true` report matching the selected saved `.blend` and its genuine comparable renders. Review timing during exploration is yours. The runtime preserves checkpoints and provides bounded context recovery; a paused or unavailable task retains its incomplete acceptance state.
 
-Deliver the editable `.blend`, requested export (`.glb` by default), inspected renders and review report. State remaining uncertainty and report incomplete work accurately. Keep original inputs and unrelated user scene data preserved.
+Deliver the chosen editable `.blend`, requested export (`.glb` by default), inspected renders and review report. Describe remaining uncertainty and unfinished work accurately.

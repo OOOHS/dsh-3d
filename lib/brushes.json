@@ -1,0 +1,16 @@
+{
+  "draw": "Draw",
+  "grab": "Grab",
+  "smooth": "Smooth",
+  "inflate": "Inflate/Deflate",
+  "clay": "Clay",
+  "clay_strips": "Clay Strips",
+  "draw_sharp": "Draw Sharp",
+  "crease": "Crease Sharp",
+  "pinch": "Pinch/Magnify",
+  "flatten": "Flatten/Contrast",
+  "scrape": "Scrape/Fill",
+  "elastic_grab": "Elastic Grab",
+  "snake_hook": "Snake Hook",
+  "layer": "Layer"
+}
