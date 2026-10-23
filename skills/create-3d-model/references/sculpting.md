@@ -1,6 +1,6 @@
 # Native brush editing
 
-Choose brushes when a local contour, soft volume or irregular surface is easier to shape through direct image feedback. Code remains useful for exact construction, topology and assembly; both edit the same scene. Grab moves a local silhouette, Draw/Inflate change volume, and Smooth blends the surface. A small reversible stroke can test whether direct shaping helps the current defect.
+Native brushes shape mesh silhouettes, proportions, soft volumes, flowing forms, folds and surface transitions through direct image feedback. They apply throughout construction, from developing a rough component to reshaping an established form and refining a region. Grab and Elastic Grab move regions, Draw/Inflate/Clay develop volume, Crease/Pinch define folds and transitions, and Smooth blends the surface. Code and brushes edit the same scene and can alternate as the geometry develops.
 
 ## Editing contract
 

@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.2.3-dev.11 - 2026-10-23
+
+- Present Python editing and native brush modeling as peer interfaces to shared geometry, with overlapping scope across construction, reshaping and refinement.
+- Describe direct edits to existing and sculpted meshes, native brush applications and the ability to alternate methods throughout a task in the main skill.
+- Explain the existing-mesh prerequisite for brushes and simple Python-created starting volumes. Keep method choice and work order open.
+
 ## 0.2.3-dev.10 - 2026-10-23
 
 - Add a conversation-owned live Blender scene shared by incremental Python, native brushes and viewport/camera observations. Keep explicit new/open starting points and project snapshots.
