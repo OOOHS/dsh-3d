@@ -1,6 +1,6 @@
-# DSH 3D tool reference
+# Optional legacy file interfaces
 
-The plugin registers one modeling skill by default. Its tools remain available throughout the task. Choose methods and observations according to the current modeling problem.
+The default seven tools and shared runtime are described in shared-scene.md. Set exposeLegacyTools:true to expose these additional file-based tools, or enableSharedScene:false to select the legacy file runtime. These are optional compatibility interfaces and technical references.
 
 ## Scene and geometry
 

@@ -26,6 +26,7 @@ test('native sculpt: four brushes, fresh images, history, retry, commit and disc
     blenderExecutable: process.env.BLENDER_EXECUTABLE ?? 'blender', analysisPythonExecutable: '',
     timeoutMs: 60000, helperTimeoutMs: 60000, maxOutputChars: 20000, restrictToWorkspace: true,
     enablePython: true, enableHelpers: true, registerSkill: false,
+    enableSharedScene: false, exposeLegacyTools: true,
   })
   const exec = { agent: { session: { header: { id: randomUUID(), cwd: workspace } } }, signal: new AbortController().signal }
   const evidence = []

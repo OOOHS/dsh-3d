@@ -1,6 +1,6 @@
 {
   "name": "dsh-3d",
-  "version": "0.2.3-dev.9",
+  "version": "0.2.3-dev.10",
   "private": true,
   "description": "A DeepSeek Harness plugin for Blender-based 3D modeling and image reconstruction.",
   "repository": {
@@ -47,6 +47,7 @@
     "test:dsh": "node test-support/dsh-profile-smoke.js",
     "validate": "node scripts/validate-package.js",
     "test:sculpt": "RUN_SCULPT_TESTS=1 node --test test/sculpt.integration.test.js",
+    "test:scene": "RUN_SCENE_TESTS=1 node --test test/scene.integration.test.js",
     "test:review-agent": "node test-support/review-agent-smoke.js",
     "test:continuation": "node test-support/continuation-smoke.js"
   },

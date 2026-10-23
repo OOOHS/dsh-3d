@@ -24,6 +24,7 @@ root = Path(config['directory'])
 BRUSHES = config['brushes']
 state = {'revision': 0, 'cursor': 0, 'hashes': [], 'view_id': None, 'closed': False,
          'highlight': True, 'isolate': False}
+shared = None
 last_activity = time.monotonic()
 last_recovery = 0
 
@@ -58,6 +59,9 @@ def viewport():
 
 
 def mesh_info():
+    if config.get('shared') and not (bpy.data.objects.get(config.get('object_name') or '') and
+                                     bpy.data.objects.get(config.get('object_name') or '').type == 'MESH'):
+        return {'object_name': None, 'vertices': 0, 'faces': 0, 'geometry_hash': hashlib.sha256(b'').hexdigest()}
     obj = object_now()
     coords = array('f', [0.0]) * (len(obj.data.vertices) * 3)
     obj.data.vertices.foreach_get('co', coords)
@@ -78,9 +82,9 @@ def surface_hit(point, region, rv):
     mouse = (point[0] * region.width, (1 - point[1]) * region.height)
     origin = view3d_utils.region_2d_to_origin_3d(region, rv, mouse)
     direction = view3d_utils.region_2d_to_vector_3d(region, rv, mouse)
-    obj = object_now()
+    obj = bpy.data.objects.get(config.get('object_name') or '') if config.get('shared') else object_now()
     depsgraph = bpy.context.evaluated_depsgraph_get()
-    if state['isolate']:
+    if state['isolate'] and obj:
         evaluated = obj.evaluated_get(depsgraph)
         inverse = evaluated.matrix_world.inverted()
         hit, location, normal, face = evaluated.ray_cast(inverse @ origin, inverse.to_3x3() @ direction)
@@ -97,6 +101,8 @@ def surface_hit(point, region, rv):
 
 
 def target_evidence(region, rv):
+    if config.get('shared') and not config.get('object_name'):
+        return {'object_name': None, 'screen_bounds': None, 'surface_samples': []}
     obj = object_now()
     projected = [view3d_utils.location_3d_to_region_2d(region, rv, obj.matrix_world @ Vector(corner))
                  for corner in obj.bound_box]
@@ -169,7 +175,7 @@ def view_signature(rv, region):
 def result(image=True, **extra):
     value = {'edit_id': config['edit_id'], 'pid': os.getpid(), 'revision': state['revision'],
              'undo_depth': state['cursor'], 'redo_depth': len(state['hashes']) - state['cursor'] - 1,
-             'source_path': config['blend_path'], 'recovery_path': str(root / 'recovery.blend'),
+             'source_path': config['blend_path'], 'recovery_path': config.get('working_path', str(root / 'recovery.blend')),
              'journal_path': str(root / 'journal.jsonl'), **mesh_info(), **extra}
     if image:
         value['view'] = observe()
@@ -288,6 +294,8 @@ def history(action):
 
 
 def execute(command):
+    if shared:
+        return shared.execute(command)
     action = command['action']
     extra = {}
     if action == 'stroke':
@@ -367,9 +375,10 @@ def tick():
         except Exception as error:
             response = {'ok': False, 'error': str(error)}
             journal('error', request_id=request['id'], error=str(error), traceback=traceback.format_exc())
-        capture = response['ok'] and not state['closed']
+        capture = response['ok'] and not state['closed'] and request['command']['action'] != 'render' and request['command'].get('observe', True)
         if capture:
-            object_now().data.update()
+            if config.get('object_name') and bpy.data.objects.get(config['object_name']):
+                object_now().data.update()
             bpy.context.view_layer.update()
             with viewport() as (area, region, rv):
                 area.tag_redraw()
@@ -379,10 +388,21 @@ def tick():
 
 
 def initialize():
-    global last_activity
+    global last_activity, shared
     try:
         if bpy.app.background:
             raise RuntimeError('Native viewport sculpting requires a windowed Blender graphics context.')
+        if config.get('shared'):
+            sys.path.insert(0, str(Path(__file__).parent))
+            from shared_scene_runtime import SharedScene
+            shared = SharedScene(globals())
+            shared.initialize()
+            value = shared.execute({'action': 'status'})
+            value['view'] = observe()
+            write_json(root / 'ready.json', {'ok': True, 'value': value})
+            last_activity = time.monotonic()
+            bpy.app.timers.register(tick, first_interval=0.1)
+            return None
         with viewport() as (area, region, rv):
             if bpy.context.object and bpy.context.object.mode != 'OBJECT':
                 bpy.ops.object.mode_set(mode='OBJECT')

@@ -10,6 +10,8 @@
         restrictToWorkspace: true
         enablePython: true
         enableSculpt: true
+        enableSharedScene: true
+        exposeLegacyTools: false
         enableReview: true
         registerAgentPresets: true
         continueUntilApproved: true

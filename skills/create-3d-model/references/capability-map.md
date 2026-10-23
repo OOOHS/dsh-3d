@@ -7,11 +7,10 @@
 3. Core Blender domains
 4. Reference-locked reconstruction
 5. Motion and animation QA
-6. Recommended pipelines
 
 ## Loading rule
 
-Load a module through DSH's `skill` tool using the module name in the tables below. All 29 modules are registered as model-invocable bundled skills. Resolve each module's `references/...` resources from the resource directory reported by the loader. Run deterministic scripts through `blender_helper_catalog` and `blender_helper_run` instead of guessing package paths.
+These 29 legacy modules are optional technical references. With registerModuleSkills:true they can be loaded through the skill tool; otherwise their files remain readable as project resources. With exposeLegacyTools:true, blender_helper_catalog returns a compact index; query a helper name for its exact arguments. Choose relevant material according to the current evidence and method.
 
 ## Orchestration and production
 
@@ -65,58 +64,3 @@ Load these only when source fidelity matters more than plausible freeform modeli
 | `texture-state-animation` | Registered, layered, export-aware transitions between texture/material states without whole-image popping or ugly crossfades. |
 | `orbital-hud-motion` | Source-derived halo, orbit, dot, dash, scanner, parallax, and restrained HUD motion. |
 | `animation-quality-gate` | Contact-sheet validation for flicker, silhouette stability, framing, subject dominance, layer separation, and export truth. |
-
-## Optional module combinations
-
-### Text or image to a general 3D model or hero render
-
-1. `blender-pro-workflow`
-2. `blender-modeling`
-3. `blender-cameras`
-4. `blender-lighting`
-5. `blender-materials`
-6. `blender-rendering`
-7. `blender-export` when requested
-
-### Edit an existing scene
-
-1. Inspect scene and object state.
-2. Load only the affected core domain modules.
-3. Preserve unrelated data and save a versioned checkpoint before destructive work.
-4. Re-run structural and visual checks for the edited scope.
-
-### Wireframe or technical drawing to 3D
-
-1. `blender-skill-harmonizer`
-2. `reference-analysis-validator`
-3. `wireframe-to-3d`
-4. `orthographic-registration` and `multiview-constraint-solver` when multiple views exist
-5. `blender-modeling`
-6. `multiview-fit-loop`
-7. `blender-materials`, `blender-lighting`, `blender-cameras`, `blender-rendering`
-8. `blender-export`
-
-### Exact mascot, logo, template, or texture pack
-
-1. `blender-skill-harmonizer`
-2. `mascot-logo-reconstruction`
-3. `reference-to-3d`
-4. `reference-analysis-validator`
-5. `source-part-segmentation`
-6. `contour-to-mesh` and `orthographic-registration`
-7. `multiview-constraint-solver` when views conflict
-8. `texture-driven-mesh-fitting`, `blender-uv-texturing`, `atlas-uv-fitting`, `closed-surface-uv-coverage`
-9. `landmark-fit-repair`, `multiview-fit-loop`, `fit-repair-optimizer`
-10. `reference-look-calibration`
-11. `blender-export`
-
-### Animated brand or HUD asset
-
-1. Complete the reference-locked geometry, UV, and look gates.
-2. `blender-animation`
-3. `texture-state-animation` when source texture states change
-4. `orbital-hud-motion` for circular or aura elements
-5. `animation-quality-gate`
-6. `blender-rendering` and `blender-export`
-
-These sequences are defaults, not mandatory module dumps. Skip modules whose gate is irrelevant.

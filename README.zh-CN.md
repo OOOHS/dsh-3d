@@ -8,14 +8,22 @@
 
 ## 当前进展
 
-开发版已加入持续雕刻会话和实时视口图片反馈。Agent 可以在同一场景中连续使用笔刷、调整视角、撤销和重做，在退出编辑时保存新的 `.blend`。
+开发版提供同一实时 Blender 工作场景。Agent 可以交替使用增量 Python、原生笔刷和视角观察，保存候选，并在运行中编写、修改、复用自己的项目工具。方法与工作顺序由 agent 根据实际结果选择。
 
 当前能力包括：
 
-- 18 个工具：上游的 13 个 Blender 工具，加上 `blender_sculpt`、`blender_view`、`review_reconstruction` 、共享的 `inspect_image` 和 `blender_checkpoint`。
+- 默认 7 个工具：`blender_scene`、`blender_execute`、`blender_sculpt`、`blender_view`、`blender_checkpoint`、`inspect_image` 和 `review_reconstruction`。
 - 两份独立的原生 agent 配置：DSH 3D 建模与 DSH 3D 评审。评审角色提供图像观察和结构化提交两个工具。
 - 默认提供 1 个精简建模 skill，附带原生画笔说明和可选分析工具。29 个上游领域 skill 保留为兼容资料，可通过 `registerModuleSkills: true` 显式启用。
-- 26 个分析与验证 helper，默认启用其中 23 个。
+- 26 个上游分析与验证 helper 作为兼容资料保留；`exposeLegacyTools:true` 开放文件工具与 helper，目录默认返回简短索引。`enableSharedScene:false` 选择旧版文件执行方式。
+
+## 共享工作场景与项目工具
+
+`blender_execute` 直接修改当前场景；第一次调用会创建空场景。`blender_scene` 的 `new`、`open` 明确选择起点，`inspect` 查询组件事实，`save` 保存项目快照并保持场景打开。代码和笔刷操作使用同一个 Blender 进程与网格；代码异常时恢复到操作前的场景。每次操作保存的工作文件、视图和日志位于 `.dsh-blender/scenes/<scene_id>/`。
+
+Agent 可以用普通文件工具编写 `tools/*.py`，定义 `run(params)`，随后通过 `blender_execute({tool_path:"tools/example.py",params:{...}})` 调用。每次读取当前源文件，修改下一次调用即生效。执行环境提供 `bpy`、`bmesh`、`mathutils`、`workspace`、`params` 和 `dsh`；`dsh` 可调用观察、选取、笔刷、渲染与检查操作。工具输出记录源代码哈希和实际对象变化。[完整执行契约与例子](skills/create-3d-model/references/shared-scene.md)。
+
+`blender_sculpt` 的 `begin` 选择当前场景中的组件；重复笔画、撤销和观察都保留在同一场景。`commit` 退出画笔模式并保留修改，可选另存快照；后续 `blender_execute` 继续编辑这些几何。`blender_view` 的 `kind:"render"` 使用场景相机渲染，并记录场景版本、图像哈希和来源。
 
 本地已在 macOS ARM64、dsh `0.2.1-alpha.2`、Blender `5.2.2 LTS` 下验证插件加载、立方体创建、渲染、GLB 导出与干净回读，以及图像分析 helper。[上游兼容性报告](docs/compatibility-v0.2.3.md) 另行保留原项目的历史验证记录。
 
@@ -27,7 +35,7 @@
 
 画笔视图默认用橙色标出目标、灰色显示上下文，返回目标的屏幕范围与射线确认的表面点；`isolate` 可独立观察组件，`probe_points` 可查询图像坐标命中的对象、位置与法线。显示颜色为临时观察效果，原场景材质保持原值。原生几何笔刷扩展为 14 种，覆盖体积、轮廓、尖锐褶线、收拢和表面塑形。固定拓扑基础网格仍是当前桥接接口的数据要求。
 
-画笔会话打开期间，文件工具可以观察或分支编辑已保存的场景；`commit` 将内存中的画笔结果保存成候选。`blender_preview` 与 `blender_render` 在宿主提供附件服务时直接返回图像，降低连续观察的调用成本。
+共享场景的观察与操作返回真实视图；显式开启的旧版文件工具可用于处理独立文件或后台批处理。
 
 ## 从源码安装
 
@@ -76,15 +84,15 @@ Blender 可在 PATH 中提供，也可在 web profile 的 `cordis.patch.yml` 中
 
 自动收尾时，插件会核对新的成功工具操作和已保存场景内容。连续三个结束边界处于停滞状态时，控制器在其中安排一次有时限的上下文恢复；恢复后仍无进展则暂停，保留当前检查点与未完成的验收状态。状态查询、重复提交相同证据会保留停滞计数；实际工作会清零计数。建模配置通过原生局部服务在 60% 上下文压力时压缩历史。检测与恢复均使用 dsh 公开接口，暂停通知保存在普通会话记录中。
 
-画笔提交后的场景会成为当前编辑检查点；后续插件 Python 修改使用这个文件作为 `blend_path`，使雕刻与代码修改可以累积。各区域的形态依据参考图中观察到的非对称关系分别塑造。
+共享场景中的代码与笔刷修改直接累积，保存快照可以选择后续候选。旧版文件模式通过 `blend_path` 选择保存后的工程。
 
 建模说明允许自由组合原生笔刷、网格编辑、曲线、修改器、Geometry Nodes 和 Python；上游配方作为可选参考，通过工程快照和视觉验收记录结果。
 
 ## 连续雕刻
 
-使用已有工具准备可见且密度足够的网格，然后让 Agent 调用 `blender_sculpt`，以 `action: "begin"`、`blend_path` 和 `object_name` 进入编辑。模型可以反复调用 `stroke` 使用原生 Draw、Grab、Smooth、Inflate/Deflate 笔刷，每次调用直接返回图片内容。`blender_view` 提供标准视角、环绕、缩放、平移、取景和投影切换；`undo` / `redo` 按笔画回退；`commit` 保存新的 `.blend`；`discard` 退出并保留原文件。
+使用已有工具准备可见且密度足够的网格，然后让 Agent 调用 `blender_sculpt`，以 `action: "begin"` 和 `object_name` 进入当前场景的笔刷模式。模型可以反复调用 `stroke` 使用原生 Draw、Grab、Smooth、Inflate/Deflate 笔刷，每次调用直接返回图片内容。`blender_view` 提供标准视角、环绕、缩放、平移、取景和投影切换；`undo` / `redo` 按笔画回退；`commit` 保留几何并退出笔刷模式；`discard` 恢复到本次画笔尝试的起点。
 
-笔画使用最近返回的 `view_id`，以及 2～256 个 `[u,v,pressure?]` 采样点。坐标归一化到图片的 0～1 范围，原点在左上角；半径为图片宽度的比例。会话归属当前对话，退出后恢复普通文件工具。恢复文件、视图和日志保存在 `.dsh-blender/sculpt/<edit_id>/`；恢复文件在进入时及之后定期保存，默认空闲 30 分钟后退出，撤销最多保留最近 64 个笔画边界。
+笔画使用最近返回的 `view_id`，以及 2～256 个 `[u,v,pressure?]` 采样点。坐标归一化到图片的 0～1 范围，原点在左上角；半径为图片宽度的比例。会话归属当前对话，代码与画笔共享几何。恢复文件、视图和日志保存在 `.dsh-blender/scenes/<scene_id>/`；恢复文件在进入时及之后定期保存，默认空闲 30 分钟后退出，撤销最多保留最近 64 个笔画边界。
 
 首版覆盖固定拓扑的基础网格和 Essentials 笔刷，进入前准备好网格密度。需要桌面图形上下文，已在 **Blender 5.2.2 LTS / macOS ARM64** 验证。Multires、Shape Keys 和动态拓扑留待后续扩展。视口用于观察几何，提交后使用正式相机渲染检查最终材质与灯光。
 

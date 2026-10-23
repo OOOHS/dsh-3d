@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.2.3-dev.10 - 2026-10-23
+
+- Add a conversation-owned live Blender scene shared by incremental Python, native brushes and viewport/camera observations. Keep explicit new/open starting points and project snapshots.
+- Add freshly loaded project Python tools with JSON parameters, source hashes and a compact project-tool index; expose observation, selection, brush and rendering primitives inside Python.
+- Preserve local code/brush changes through method switches, save working recovery after mutations, and restore the preceding scene after Python exceptions.
+- Reduce the default surface from eighteen tools to seven and condense the main skill. Keep file tools and upstream helpers behind explicit compatibility settings; return compact helper indexes by default.
+- Scope a visual-3D persona to the modeler preset through the public system-prompt API. Keep independent reviewer and continuation components separate.
+
 ## 0.2.3-dev.9 - 2026-10-23
 
 - Let modelers revise methods, work orders and component boundaries during exploration. Keep a single concise skill and free-form candidate notes.

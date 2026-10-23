@@ -15,6 +15,7 @@ import { ReconstructionSessions } from './lib/reconstruction-session.js'
 import { MODELER_AGENT, REVIEWER_AGENT, agentSchema, agentSettings, registerAgentPresets } from './lib/agent-config.js'
 import { createInspectImageTool } from './lib/inspect-image.js'
 import { createCheckpointTool } from './lib/checkpoints.js'
+import { SceneSessions, createSceneTools } from './lib/scene-session.js'
 
 export const name = 'dsh-3d'
 export const inject = ['tools', 'skills']
@@ -28,6 +29,8 @@ export const Config = Schema.object({
   restrictToWorkspace: Schema.boolean().default(true),
   enablePython: Schema.boolean().default(true),
   enableSculpt: Schema.boolean().default(true),
+  enableSharedScene: Schema.boolean().default(true),
+  exposeLegacyTools: Schema.boolean().default(false),
   sculptIdleTimeoutMs: Schema.number().default(1800000),
   enableReview: Schema.boolean().default(true),
   modelerAgent: agentSchema(MODELER_AGENT),
@@ -609,6 +612,9 @@ function createTools(config) {
             'scene-inspection', 'object-inspection', 'model-import', 'blender-python', 'camera-free-preview',
             'still-render', 'animation-frame-render', 'model-export', 'scene-validation', 'export-reimport-validation',
             ...(config.enableHelpers ? ['reference-analysis', 'wireframe-analysis', 'multiview-fit', 'texture-and-animation-qa'] : []),
+            ...(config.enableSculpt !== false ? ['native-brushes', 'viewport'] : []),
+            ...(config.enableSharedScene !== false ? ['persistent-scene', 'project-tools'] : []),
+            'candidate-checkpoints', 'independent-review',
           ],
           workspaceRoot: sessionWorkspace(exec),
         }
@@ -1138,6 +1144,7 @@ function createTools(config) {
       description: 'List the bundled deterministic reference-analysis, wireframe, contour, multiview, UV, texture, look, repair, and animation-QA helpers with their exact arguments and dependency availability. Call before blender_helper_run when the needed helper or fields are uncertain.',
       parameters: {
         module: { type: 'string', description: 'Optional module name filter.' },
+        helper: { type: 'string', description: 'Return full arguments for this helper. The default is a compact index.' },
         include_maintenance: { type: 'boolean', description: 'Show maintenance-only helpers when enabled by plugin configuration.' },
       },
       output: {
@@ -1156,6 +1163,7 @@ function createTools(config) {
         const analysis = await probeAnalysisRuntime(config, exec.signal)
         const helpers = HELPER_CATALOG
           .filter((helper) => !args.module || helper.module === args.module)
+          .filter((helper) => !args.helper || helper.name === args.helper)
           .filter((helper) => !helper.maintenance || (config.enableMaintenanceHelpers && args.include_maintenance === true))
           .map((helper) => ({
             name: helper.name,
@@ -1165,14 +1173,14 @@ function createTools(config) {
             dependencies: helper.dependencies,
             available: helper.runtime === 'blender' || helper.dependencies.length === 0 || analysis.available,
             requiresBlend: helper.requiresBlend === true,
-            arguments: helper.arguments.map(({ name, type, pathKind, required, choices, positional }) => ({
+            ...(args.helper ? { arguments: helper.arguments.map(({ name, type, pathKind, required, choices, positional }) => ({
               name,
               type,
               pathKind: pathKind ?? '',
               required: required === true,
               choices: choices ?? [],
               positional: positional === true,
-            })),
+            })) } : {}),
           }))
         return { analysis, helpers }
       },
@@ -1228,7 +1236,8 @@ function createTools(config) {
 export function apply(ctx, config) {
   assertConfig(config)
   if (config.registerSkill) registerSkills(ctx, config)
-  const sessions = config.enableSculpt !== false ? new SculptSessions(config, {
+  const SessionManager = config.enableSharedScene !== false ? SceneSessions : SculptSessions
+  const sessions = (config.enableSharedScene !== false || config.enableSculpt !== false) ? new SessionManager(config, {
     resolve: resolveWorkspacePath,
     file: assertRegularFile,
     writable: (path, overwrite) => assertWritableTarget(path, overwrite, 'save_path'),
@@ -1268,8 +1277,13 @@ export function apply(ctx, config) {
       return execute()
     }) : execute()
   } })
-  for (const tool of createTools(config)) {
-    ctx.tools.register(wrap(observeRender(tool)))
+  if (config.exposeLegacyTools === true || config.enableSharedScene === false) {
+    for (const tool of createTools(config)) ctx.tools.register(wrap(observeRender(tool)))
+  }
+  if (config.enableSharedScene !== false) {
+    for (const tool of createSceneTools(sessions)) {
+      if (tool.name !== 'blender_execute' || config.enablePython !== false) ctx.tools.register(wrap(tool, false))
+    }
   }
   ctx.tools.register(wrap(createCheckpointTool(config, {
     resolve: resolveWorkspacePath, file: assertRegularFile,
@@ -1279,7 +1293,9 @@ export function apply(ctx, config) {
       input_path: source, output_path: target,
     }, source),
   })))
-  if (sessions) for (const tool of createSculptTools(sessions)) ctx.tools.register(wrap(tool, false))
+  if (sessions) for (const tool of createSculptTools(sessions)) {
+    if (tool.name !== 'blender_sculpt' || config.enableSculpt !== false) ctx.tools.register(wrap(tool, false))
+  }
   if (config.enableReview !== false) ctx.tools.register(createReviewTool(ctx, config, {
     resolve: resolveWorkspacePath,
     writable: (path, overwrite) => assertWritableTarget(path, overwrite, 'report_path'),

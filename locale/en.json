@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "DSH 3D (Development)",
-    "description": "Blender modeling and reconstruction with native sculpting, live views and independent visual review before completion. Based on CheshireJCat/blender."
+    "description": "Shared Blender workspace with Python, native brushes, live views, editable project tools and independent review. Based on CheshireJCat/blender."
   }
 }

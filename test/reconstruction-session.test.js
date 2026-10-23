@@ -57,6 +57,16 @@ test('missing review evidence and live brush edits each keep acceptance pending'
   await assert.rejects(f.manager.prepareReview({ reference_path: 'reference.png', blend_path: 'scene.blend' }, f.exec), /Commit or discard/u)
 })
 
+test('shared scenes can review saved candidates and finish while their native workspace remains open', async () => {
+  const f = await fixture(); await f.begin()
+  f.sculpt.sessions.set('session', { id: 'scene', shared: true, brushActive: true })
+  await f.manager.prepareReview({ reference_path: 'reference.png', blend_path: 'scene.blend' }, f.exec)
+  f.manager.reviewed(await f.review(), f.exec)
+  await f.stop()
+  assert.equal(f.steered.length, 0)
+  assert.equal((await f.manager.status(f.exec)).status, 'approved')
+})
+
 test('cancellation, queued human input and disposal yield control without restarting work', async () => {
   const f = await fixture(); await f.begin()
   const abort = new AbortController(); abort.abort()

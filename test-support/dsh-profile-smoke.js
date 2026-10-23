@@ -21,12 +21,12 @@ async function runtime(host, reportPath) {
   const { ctx } = await runProfile({ environment, profile, patchFiles: [], args: [] })
   try {
     const tools = ctx.tools.schemas().map((tool) => tool.name).filter((name) => name.startsWith('blender_') || name === 'review_reconstruction')
-    assert.equal(tools.length, 16)
+    assert.equal(tools.length, 5)
     const workspace = await mkdtemp(join(process.env.DSH_HOME, 'workspace-'))
     const skills = (await ctx.skills.list({ cwd: workspace })).filter((skill) => skill.provider === 'dsh-3d')
     assert.equal(skills.length, 1)
     const skill = await ctx.skills.get('create-3d-model', { cwd: workspace })
-    assert.match(skill.content, /blender_status/u)
+    assert.match(skill.content, /blender_scene/u)
     const handle = await ctx.agents.create({ sessionId: randomUUID(), meta: { cwd: workspace } })
     try {
       const executed = []
@@ -39,60 +39,32 @@ async function runtime(host, reportPath) {
         executed.push(name)
         return result.value
       }
-      const status = await run('blender_status', {})
-      assert.equal(status.available, true)
-      assert.equal(status.analysis.available, true)
-      const created = await run('blender_python', {
-        save_path: 'cube.blend',
-        script: `
-bpy.ops.object.select_all(action='SELECT')
-bpy.ops.object.delete(use_global=False)
+      const created = await run('blender_execute', {script: `
 bpy.ops.mesh.primitive_cube_add()
-bpy.context.object.name = 'DSH-Smoke-Cube'
-mat = bpy.data.materials.new('Smoke-Material')
-bpy.context.object.data.materials.append(mat)
-dsh_result = {'created': 'DSH-Smoke-Cube'}
-`,
-      })
-      assert.ok(created.bytes > 0)
-      const scene = await run('blender_scene_info', { blend_path: 'cube.blend' })
-      assert.equal(scene.scene.objectCount, 1)
-      const object = await run('blender_object_info', { blend_path: 'cube.blend', object_names: ['DSH-Smoke-Cube'] })
-      assert.equal(object.objects[0].name, 'DSH-Smoke-Cube')
-      const validation = await run('blender_validate_scene', { blend_path: 'cube.blend', profile: 'web' })
-      assert.equal(validation.passed, true)
-      const preview = await run('blender_preview', {
-        blend_path: 'cube.blend', output_path: 'preview.png', width: 160, height: 160, samples: 4,
-      })
-      assert.ok(preview.bytes > 0)
-      const exported = await run('blender_export', { blend_path: 'cube.blend', output_path: 'cube.glb' })
-      assert.ok(exported.bytes > 0)
-      const reimported = await run('blender_validate_export', { model_path: 'cube.glb', profile: 'web' })
-      assert.equal(reimported.validation.passed, true)
-      assert.equal(reimported.importedObjects.includes('DSH-Smoke-Cube'), true)
-      const catalog = await run('blender_helper_catalog', {})
-      assert.equal(catalog.helpers.length, 23)
-      const pixels = Buffer.alloc(64 * 64, 255)
-      for (let y = 12; y <= 51; y += 1) {
-        for (let x = 12; x <= 51; x += 1) {
-          if (x < 16 || x > 47 || y < 16 || y > 47) pixels[y * 64 + x] = 0
-        }
-      }
-      await writeFile(join(workspace, 'square.pgm'), Buffer.concat([Buffer.from('P5\n64 64\n255\n'), pixels]))
-      const wireframe = await run('blender_helper_run', {
-        helper: 'wireframe-analyzer', arguments: { image: 'square.pgm', out: 'wireframe.json' },
-      })
-      assert.ok(wireframe.report.metadata.num_contours >= 1)
-      const escaped = await ctx.tools.execute({
-        callId: randomUUID(), name: 'blender_python',
-        arguments: { save_path: '../escape.blend', script: 'pass' },
-        agent: handle.agent, signal: new AbortController().signal,
-      })
-      assert.equal(escaped.isError, true)
-      assert.match(escaped.error.message, /must stay inside/u)
+bpy.context.object.name='DSH-Smoke-Cube'
+bpy.ops.object.camera_add(location=(4,-6,3))
+cam=bpy.context.object
+cam.rotation_euler=(-cam.location).to_track_quat('-Z','Y').to_euler()
+bpy.context.scene.camera=cam
+bpy.context.scene.render.engine='BLENDER_WORKBENCH'
+dsh_result={'created':'DSH-Smoke-Cube'}
+`})
+      assert.ok(created.pid)
+      const scene = await run('blender_scene', {action:'inspect',object_names:['DSH-Smoke-Cube']})
+      assert.equal(scene.objects[0].name,'DSH-Smoke-Cube')
+      const preview = await run('blender_view',{kind:'render',output_path:'preview.png',width:160,height:160,samples:4})
+      assert.ok(preview.view.attachment)
+      await run('blender_scene',{action:'save',save_path:'cube.blend'})
+      await run('blender_execute',{script:"bpy.ops.export_scene.gltf(filepath=workspace+'/cube.glb',export_format='GLB')",observe:false})
+      assert.ok((await stat(join(workspace,'cube.glb'))).size>0)
+      const escaped=await ctx.tools.execute({callId:randomUUID(),name:'blender_execute',arguments:{tool_path:'../escape.py'},agent:handle.agent,signal:new AbortController().signal})
+      assert.equal(escaped.isError,true)
+      assert.match(escaped.error.message,/must stay inside/u)
+      const status=await run('blender_scene',{action:'status'})
+      await run('blender_scene',{action:'close'})
       await writeFile(reportPath, JSON.stringify({
-        tools: tools.length, skills: skills.length, enabledHelpers: catalog.helpers.length,
-        executed, pathGuard: 'passed', blender: status.version, analysis: status.analysis.dependencies,
+        tools: tools.length, skills: skills.length,
+        executed, pathGuard: 'passed', blender: status.blender_version,
       }, null, 2) + '\n')
     } finally {
       await handle.dispose()

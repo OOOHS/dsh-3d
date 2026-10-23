@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "DSH 3D（开发版）",
-    "description": "Blender 建模与图像重建：原生连续雕刻、实时视图和独立视觉评审，评审通过后完成验收。基于 CheshireJCat/blender。"
+    "description": "共享 Blender 工作场景：增量代码、原生画笔、实时视图、可即时改写的项目工具与独立评审。基于 CheshireJCat/blender。"
   }
 }

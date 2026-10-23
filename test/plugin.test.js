@@ -20,7 +20,7 @@ const config = {
   registerModuleSkills: false,
 }
 
-test('registers one default modeling skill and all Blender production tools', () => {
+test('registers one default skill and seven shared-workspace tools', () => {
   const tools = []
   const skills = []
   apply({
@@ -29,19 +29,8 @@ test('registers one default modeling skill and all Blender production tools', ()
   }, config)
 
   assert.deepEqual(tools.map((tool) => tool.name), [
-    'blender_status',
-    'blender_scene_info',
-    'blender_object_info',
-    'blender_import',
-    'blender_python',
-    'blender_preview',
-    'blender_render',
-    'blender_render_frames',
-    'blender_export',
-    'blender_validate_scene',
-    'blender_validate_export',
-    'blender_helper_catalog',
-    'blender_helper_run',
+    'blender_scene',
+    'blender_execute',
     'blender_checkpoint',
     'blender_sculpt',
     'blender_view',
@@ -51,7 +40,7 @@ test('registers one default modeling skill and all Blender production tools', ()
   assert.equal(skills.length, 1)
   assert.equal(skills[0].name, 'create-3d-model')
   assert.equal(skills[0].provider, 'dsh-3d')
-  assert.match(skills[0].content, /blender_status/u)
+  assert.match(skills[0].content, /blender_scene/u)
   assert.equal(skills[0].resourceBase.kind, 'directory')
   assert.deepEqual(skills.map((skill) => skill.name), ['create-3d-model'])
 })
@@ -71,7 +60,7 @@ test('can disable the arbitrary Blender Python tool and bundled skill', () => {
     skills: { register(skill) { skills.push(skill) } },
   }, { ...config, enablePython: false, registerSkill: false })
 
-  assert.equal(tools.some((tool) => tool.name === 'blender_python'), false)
+  assert.equal(tools.some((tool) => tool.name === 'blender_execute'), false)
   assert.equal(skills.length, 0)
 })
 
@@ -81,7 +70,7 @@ test('can expose only the top-level skill and disable helper tools', () => {
   apply({
     tools: { register(tool) { tools.push(tool) } },
     skills: { register(skill) { skills.push(skill) } },
-  }, { ...config, enableHelpers: false, registerModuleSkills: false })
+  }, { ...config, enableSharedScene: false, exposeLegacyTools: true, enableHelpers: false, registerModuleSkills: false })
 
   assert.equal(skills.length, 1)
   assert.equal(tools.some((tool) => tool.name === 'blender_helper_run'), false)

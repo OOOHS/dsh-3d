@@ -17,6 +17,7 @@ const required = [
   'scripts/setup-analysis.js',
   'lib/helper-catalog.js',
   'lib/sculpt-session.js',
+  'lib/scene-session.js',
   'lib/reconstruction-review.js',
   'lib/reconstruction-session.js',
   'lib/continuation-guard.js',
@@ -29,6 +30,7 @@ const required = [
   'agents/reviewer.json',
   'scripts/inspect_image.py',
   'scripts/dsh_sculpt_worker.py',
+  'scripts/shared_scene_runtime.py',
   'requirements-analysis.txt',
   'README.md',
   'README.zh-CN.md',
@@ -38,6 +40,7 @@ const required = [
   'skills/create-3d-model/references/dsh-integration.md',
   'skills/create-3d-model/references/capability-map.md',
   'skills/create-3d-model/references/sculpting.md',
+  'skills/create-3d-model/references/shared-scene.md',
   'LICENSE',
   'NOTICE',
 ]

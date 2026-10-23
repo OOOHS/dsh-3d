@@ -8,14 +8,22 @@ DSH 3D is developed from [CheshireJCat/blender](https://github.com/CheshireJCat/
 
 ## Status
 
-The development version adds persistent native sculpting and live viewport feedback. An agent can keep one editing session open, use brushes repeatedly, change views, undo/redo, and save a new `.blend` when the edit is complete.
+The development version provides a shared live Blender workspace. Agents can alternate incremental Python, native brushes and visual observations, save alternatives, and create or revise reusable project tools during execution. Methods and work order remain agent decisions.
 
 Current capabilities include:
 
-- 18 tools: the 13 upstream Blender tools, `blender_sculpt`, `blender_view`, `review_reconstruction`, shared `inspect_image`, and `blender_checkpoint`.
+- Seven default tools: `blender_scene`, `blender_execute`, `blender_sculpt`, `blender_view`, `blender_checkpoint`, `inspect_image`, and `review_reconstruction`.
 - Independent native DSH modeler/reviewer presets. The scoped reviewer receives observation and structured submission tools.
 - One concise modeling skill by default, with native brush guidance and optional reference-analysis helpers. The 29 upstream domain skills remain available through `registerModuleSkills: true` for legacy use.
-- 26 analysis and validation helpers, with 23 enabled by default.
+- Upstream file tools and 26 helpers remain available through `exposeLegacyTools:true`. Helper discovery returns a compact index, with full arguments requested by helper name. `enableSharedScene:false` selects the legacy file runtime.
+
+## Shared scene and reusable project tools
+
+`blender_execute` edits the current scene and creates an empty scene on first use. `blender_scene` selects explicit new/open starting points, inspects object facts and saves snapshots without closing the scene. Python and native brushes operate on the same process and meshes; Python exceptions restore the preceding scene. Working files, views and journals live under `.dsh-blender/scenes/<scene_id>/`.
+
+Agents may write ordinary `tools/*.py` files defining `run(params)`, then call them with `blender_execute({tool_path:"tools/example.py",params:{...}})`. The current source is loaded on every invocation, so edits take effect immediately. Globals include `bpy`, `bmesh`, `mathutils`, `workspace`, `params` and `dsh`; the latter exposes inspection, selection, views, native strokes and camera rendering. Outputs identify the tool source hash and actual object changes. See the [execution contract and examples](skills/create-3d-model/references/shared-scene.md).
+
+`blender_sculpt` selects a component in the live scene. Repeated strokes, undo and views share that state. `commit` leaves brush mode and retains geometry; an optional path saves a separate snapshot. Subsequent Python continues editing this geometry. `blender_view({kind:"render"})` renders with a scene camera and records scene/image provenance.
 
 The local development setup has exercised plugin loading, cube creation, rendering, GLB export and clean re-import, and an image-analysis helper using dsh `0.2.1-alpha.2` and Blender `5.2.2 LTS` on macOS ARM64. The historical [upstream compatibility report](docs/compatibility-v0.2.3.md) records the original project's separate validation.
 
@@ -27,7 +35,7 @@ The model chooses and revises its methods, work order and component boundaries. 
 
 Brush views highlight the target in orange, show context in gray, and return projected bounds and raycast-confirmed surface samples. `isolate` displays a component alone; `probe_points` returns hit objects, world locations and normals for image coordinates. Display colors are temporary. Fourteen native geometry brushes cover contour, volume, creases, pinching and surface shaping. The current brush bridge still requires fixed-topology base meshes.
 
-File tools can inspect or branch saved scenes while a live brush copy is open. Commit publishes live shaping as a saved candidate. Preview and render tools return direct images when the host attachment service is available.
+The shared execution interface, editable project tools and optional legacy file interfaces can all support candidate exploration. The agent chooses which scenes and observations to retain and revise.
 
 ## Installation from source
 
@@ -76,15 +84,15 @@ Example tool input:
 
 Automatic endings are checked for progress using successful new tool operations and saved scene contents. Three consecutive idle endings trigger a bounded recovery and then a paused checkpoint if work remains unchanged. Status queries and repeated submissions of the same evidence preserve the idle counter. Productive work resets it. The modeler preset compacts context at 60% pressure through the native scoped service. The guard uses public DSH APIs and persists a pause notice in ordinary session history.
 
-Brush commits become the current editable checkpoint. Subsequent plugin Python edits use that checkpoint as `blend_path`, so brush shaping and later code changes accumulate together. The reference's observed asymmetry guides regional shaping.
+Shared code and brush edits accumulate directly in the live scene. Saved snapshots can select subsequent candidates. The legacy file runtime uses blend_path to select saved inputs.
 
 Modeling guidance treats native brushes, mesh operations, curves, modifiers, Geometry Nodes and Python as available techniques. Inherited recipes are optional references; scene checkpoints and visual acceptance document the result.
 
 ## Native sculpting
 
-Prepare a dense, visible mesh with the existing tools, then ask the agent to enter `blender_sculpt` with `action: "begin"`, the input `blend_path` and `object_name`. Repeated `stroke` calls use native Draw, Grab, Smooth or Inflate/Deflate brushes and return image content directly to the model. `blender_view` controls standard views, orbit, zoom, pan, framing and projection. `undo`/`redo` operate on strokes; `commit` saves a new `.blend`, and `discard` exits with the original preserved.
+Prepare a dense, visible mesh with the existing tools, then ask the agent to enter `blender_sculpt` with `action: "begin"` and `object_name` in the current scene. Repeated `stroke` calls use native Draw, Grab, Smooth or Inflate/Deflate brushes and return image content directly to the model. `blender_view` controls standard views, orbit, zoom, pan, framing and projection. `undo`/`redo` operate on strokes; `commit` saves a new `.blend`, and `discard` exits with the original preserved.
 
-Strokes use the latest `view_id` and 2–256 `[u,v,pressure?]` samples normalized to the returned image (top-left origin). `radius` is a fraction of image width. Each conversation owns its session; file-based tools resume after exit. Recovery files, view images and a journal remain in `.dsh-blender/sculpt/<edit_id>/`. Recovery is periodic, with a default 30-minute idle timeout. The latest 64 stroke boundaries are available for undo/redo.
+Strokes use the latest `view_id` and 2–256 `[u,v,pressure?]` samples normalized to the returned image (top-left origin). `radius` is a fraction of image width. Each conversation owns its session; file-based tools resume after exit. Recovery files, view images and a journal remain in `.dsh-blender/scenes/<scene_id>/`. Recovery is periodic, with a default 30-minute idle timeout. The latest 64 stroke boundaries are available for undo/redo.
 
 The first version supports fixed-topology base meshes and Essentials brushes; prepare mesh density before entry. It requires a desktop graphics context and was tested on Blender **5.2.2 LTS / macOS ARM64**. Multires, Shape Keys and Dynamic Topology are reserved for future work. The default viewport provides geometry feedback; authored camera renders remain the final appearance check.
 
