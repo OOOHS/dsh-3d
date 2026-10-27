@@ -170,3 +170,7 @@ File-based operations use local background Blender processes. Sculpting uses a p
 - [Blender](https://www.blender.org/): the 3D creation application used by the plugin.
 
 The plugin code retains the upstream [MIT license](LICENSE). Additional provenance and preserved license files are listed in [NOTICE](NOTICE) and under `skills/create-3d-model/`. Blender is a separate project with its own license. DSH 3D is an independent community project.
+
+## Examples
+
+Two autonomous dev.19 tasks cover [ceramic product modeling and a desk-fan animation](examples/dev19/README.md), with editable assets, renders, prompts and tool-use summaries.

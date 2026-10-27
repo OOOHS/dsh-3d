@@ -1,0 +1,55 @@
+[
+  {
+    "task": "ceramic",
+    "calls": 143,
+    "counts": {
+      "skill": 1,
+      "blender_status": 1,
+      "bash": 16,
+      "modeling_notes_read": 3,
+      "write": 2,
+      "read_image": 6,
+      "blender_execute": 28,
+      "edit": 43,
+      "blender_scene": 5,
+      "blender_view": 24,
+      "inspect_image": 5,
+      "blender_export": 2,
+      "blender_validate_export": 2,
+      "blender_import": 1,
+      "blender_preview": 2,
+      "blender_validate_scene": 1,
+      "present": 1
+    },
+    "error_count": 8,
+    "minutes": 44.3,
+    "completed": true
+  },
+  {
+    "task": "fan",
+    "calls": 110,
+    "counts": {
+      "skill": 1,
+      "bash": 21,
+      "blender_status": 1,
+      "modeling_notes_read": 1,
+      "blender_scene": 4,
+      "blender_execute": 35,
+      "blender_helper_catalog": 2,
+      "write": 2,
+      "edit": 1,
+      "blender_view": 13,
+      "inspect_image": 3,
+      "read": 1,
+      "blender_render_frames": 6,
+      "blender_helper_run": 1,
+      "read_image": 14,
+      "blender_preview": 1,
+      "blender_validate_scene": 2,
+      "present": 1
+    },
+    "error_count": 5,
+    "minutes": 29.2,
+    "completed": true
+  }
+]

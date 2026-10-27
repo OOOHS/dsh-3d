@@ -1,0 +1,762 @@
+[
+  {
+    "sequence": 18,
+    "tool": "skill",
+    "error": false
+  },
+  {
+    "sequence": 24,
+    "tool": "blender_status",
+    "error": false
+  },
+  {
+    "sequence": 26,
+    "tool": "bash",
+    "error": false
+  },
+  {
+    "sequence": 32,
+    "tool": "modeling_notes_read",
+    "error": false
+  },
+  {
+    "sequence": 38,
+    "tool": "modeling_notes_read",
+    "error": false
+  },
+  {
+    "sequence": 40,
+    "tool": "modeling_notes_read",
+    "error": false
+  },
+  {
+    "sequence": 46,
+    "tool": "bash",
+    "error": false
+  },
+  {
+    "sequence": 52,
+    "tool": "write",
+    "error": false
+  },
+  {
+    "sequence": 58,
+    "tool": "bash",
+    "error": false
+  },
+  {
+    "sequence": 64,
+    "tool": "read_image",
+    "error": false
+  },
+  {
+    "sequence": 65,
+    "tool": "read_image",
+    "error": false
+  },
+  {
+    "sequence": 66,
+    "tool": "read_image",
+    "error": false
+  },
+  {
+    "sequence": 74,
+    "tool": "write",
+    "error": false
+  },
+  {
+    "sequence": 80,
+    "tool": "blender_execute",
+    "error": false,
+    "project_script": "build_mug.py"
+  },
+  {
+    "sequence": 86,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 92,
+    "tool": "blender_execute",
+    "error": true,
+    "project_script": "build_mug.py"
+  },
+  {
+    "sequence": 98,
+    "tool": "blender_execute",
+    "error": false
+  },
+  {
+    "sequence": 104,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 110,
+    "tool": "blender_execute",
+    "error": true,
+    "project_script": "build_mug.py"
+  },
+  {
+    "sequence": 116,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 122,
+    "tool": "blender_execute",
+    "error": true,
+    "project_script": "build_mug.py"
+  },
+  {
+    "sequence": 128,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 134,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 140,
+    "tool": "blender_execute",
+    "error": true,
+    "project_script": "build_mug.py"
+  },
+  {
+    "sequence": 146,
+    "tool": "bash",
+    "error": false
+  },
+  {
+    "sequence": 152,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 158,
+    "tool": "blender_execute",
+    "error": true,
+    "project_script": "build_mug.py"
+  },
+  {
+    "sequence": 164,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 170,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 176,
+    "tool": "blender_scene",
+    "error": false,
+    "action": "open"
+  },
+  {
+    "sequence": 182,
+    "tool": "blender_scene",
+    "error": false,
+    "action": "inspect"
+  },
+  {
+    "sequence": 188,
+    "tool": "blender_execute",
+    "error": false
+  },
+  {
+    "sequence": 194,
+    "tool": "blender_execute",
+    "error": false
+  },
+  {
+    "sequence": 200,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 206,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 212,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 218,
+    "tool": "blender_execute",
+    "error": false,
+    "project_script": "build_mug.py"
+  },
+  {
+    "sequence": 224,
+    "tool": "blender_view",
+    "error": false,
+    "kind": "render"
+  },
+  {
+    "sequence": 230,
+    "tool": "blender_execute",
+    "error": false
+  },
+  {
+    "sequence": 236,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 243,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 249,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 255,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 261,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 267,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 273,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 279,
+    "tool": "blender_execute",
+    "error": false,
+    "project_script": "build_mug.py"
+  },
+  {
+    "sequence": 285,
+    "tool": "blender_view",
+    "error": false,
+    "kind": "render"
+  },
+  {
+    "sequence": 291,
+    "tool": "blender_execute",
+    "error": false
+  },
+  {
+    "sequence": 297,
+    "tool": "blender_execute",
+    "error": false
+  },
+  {
+    "sequence": 303,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 309,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 315,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 321,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 327,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 333,
+    "tool": "blender_execute",
+    "error": false,
+    "project_script": "build_mug.py"
+  },
+  {
+    "sequence": 339,
+    "tool": "blender_view",
+    "error": false,
+    "kind": "render"
+  },
+  {
+    "sequence": 345,
+    "tool": "blender_view",
+    "error": false,
+    "kind": "render"
+  },
+  {
+    "sequence": 347,
+    "tool": "blender_view",
+    "error": false,
+    "kind": "render"
+  },
+  {
+    "sequence": 353,
+    "tool": "inspect_image",
+    "error": false
+  },
+  {
+    "sequence": 355,
+    "tool": "inspect_image",
+    "error": false
+  },
+  {
+    "sequence": 361,
+    "tool": "blender_execute",
+    "error": false
+  },
+  {
+    "sequence": 367,
+    "tool": "blender_view",
+    "error": false,
+    "kind": "render"
+  },
+  {
+    "sequence": 373,
+    "tool": "bash",
+    "error": false
+  },
+  {
+    "sequence": 379,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 385,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 391,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 397,
+    "tool": "bash",
+    "error": false
+  },
+  {
+    "sequence": 403,
+    "tool": "read_image",
+    "error": false
+  },
+  {
+    "sequence": 404,
+    "tool": "read_image",
+    "error": false
+  },
+  {
+    "sequence": 411,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 417,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 423,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 429,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 435,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 441,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 447,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 453,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 459,
+    "tool": "blender_execute",
+    "error": false,
+    "project_script": "build_mug.py"
+  },
+  {
+    "sequence": 465,
+    "tool": "blender_view",
+    "error": false,
+    "kind": "render"
+  },
+  {
+    "sequence": 471,
+    "tool": "blender_view",
+    "error": false,
+    "kind": "render"
+  },
+  {
+    "sequence": 473,
+    "tool": "blender_view",
+    "error": false,
+    "kind": "render"
+  },
+  {
+    "sequence": 479,
+    "tool": "inspect_image",
+    "error": false
+  },
+  {
+    "sequence": 486,
+    "tool": "blender_execute",
+    "error": true
+  },
+  {
+    "sequence": 492,
+    "tool": "blender_execute",
+    "error": false
+  },
+  {
+    "sequence": 498,
+    "tool": "blender_execute",
+    "error": false
+  },
+  {
+    "sequence": 504,
+    "tool": "blender_view",
+    "error": false,
+    "kind": "render"
+  },
+  {
+    "sequence": 510,
+    "tool": "inspect_image",
+    "error": false
+  },
+  {
+    "sequence": 516,
+    "tool": "blender_execute",
+    "error": false
+  },
+  {
+    "sequence": 522,
+    "tool": "blender_view",
+    "error": false,
+    "kind": "viewport"
+  },
+  {
+    "sequence": 528,
+    "tool": "blender_scene",
+    "error": false,
+    "action": "configure",
+    "mode": "OBJECT"
+  },
+  {
+    "sequence": 534,
+    "tool": "bash",
+    "error": false
+  },
+  {
+    "sequence": 540,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 546,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 552,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 558,
+    "tool": "blender_execute",
+    "error": false,
+    "project_script": "build_mug.py"
+  },
+  {
+    "sequence": 564,
+    "tool": "blender_view",
+    "error": false,
+    "kind": "render"
+  },
+  {
+    "sequence": 570,
+    "tool": "blender_execute",
+    "error": false
+  },
+  {
+    "sequence": 576,
+    "tool": "blender_view",
+    "error": false,
+    "kind": "render"
+  },
+  {
+    "sequence": 582,
+    "tool": "read_image",
+    "error": false
+  },
+  {
+    "sequence": 588,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 594,
+    "tool": "blender_execute",
+    "error": false,
+    "project_script": "build_mug.py"
+  },
+  {
+    "sequence": 600,
+    "tool": "blender_view",
+    "error": false,
+    "kind": "render"
+  },
+  {
+    "sequence": 606,
+    "tool": "inspect_image",
+    "error": false
+  },
+  {
+    "sequence": 612,
+    "tool": "bash",
+    "error": false
+  },
+  {
+    "sequence": 618,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 624,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 630,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 636,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 642,
+    "tool": "edit",
+    "error": false
+  },
+  {
+    "sequence": 648,
+    "tool": "blender_execute",
+    "error": false,
+    "project_script": "build_mug.py"
+  },
+  {
+    "sequence": 655,
+    "tool": "blender_view",
+    "error": false,
+    "kind": "render"
+  },
+  {
+    "sequence": 657,
+    "tool": "blender_view",
+    "error": false,
+    "kind": "render"
+  },
+  {
+    "sequence": 663,
+    "tool": "blender_scene",
+    "error": false,
+    "action": "save"
+  },
+  {
+    "sequence": 669,
+    "tool": "blender_export",
+    "error": false
+  },
+  {
+    "sequence": 675,
+    "tool": "blender_validate_export",
+    "error": false
+  },
+  {
+    "sequence": 681,
+    "tool": "blender_import",
+    "error": false
+  },
+  {
+    "sequence": 687,
+    "tool": "blender_preview",
+    "error": false
+  },
+  {
+    "sequence": 693,
+    "tool": "blender_preview",
+    "error": false
+  },
+  {
+    "sequence": 699,
+    "tool": "blender_view",
+    "error": false,
+    "kind": "render"
+  },
+  {
+    "sequence": 705,
+    "tool": "bash",
+    "error": false
+  },
+  {
+    "sequence": 711,
+    "tool": "blender_execute",
+    "error": false,
+    "project_script": "build_mug.py"
+  },
+  {
+    "sequence": 717,
+    "tool": "blender_view",
+    "error": false,
+    "kind": "render"
+  },
+  {
+    "sequence": 723,
+    "tool": "bash",
+    "error": false
+  },
+  {
+    "sequence": 729,
+    "tool": "blender_execute",
+    "error": false,
+    "project_script": "build_mug.py"
+  },
+  {
+    "sequence": 735,
+    "tool": "blender_view",
+    "error": false,
+    "kind": "render"
+  },
+  {
+    "sequence": 741,
+    "tool": "blender_scene",
+    "error": true,
+    "action": "save"
+  },
+  {
+    "sequence": 747,
+    "tool": "blender_execute",
+    "error": false
+  },
+  {
+    "sequence": 753,
+    "tool": "blender_export",
+    "error": false
+  },
+  {
+    "sequence": 759,
+    "tool": "blender_view",
+    "error": true,
+    "kind": "render"
+  },
+  {
+    "sequence": 765,
+    "tool": "blender_view",
+    "error": false,
+    "kind": "render"
+  },
+  {
+    "sequence": 771,
+    "tool": "blender_view",
+    "error": false,
+    "kind": "render"
+  },
+  {
+    "sequence": 777,
+    "tool": "blender_view",
+    "error": false,
+    "kind": "render"
+  },
+  {
+    "sequence": 784,
+    "tool": "blender_view",
+    "error": false,
+    "kind": "render"
+  },
+  {
+    "sequence": 790,
+    "tool": "bash",
+    "error": false
+  },
+  {
+    "sequence": 796,
+    "tool": "bash",
+    "error": false
+  },
+  {
+    "sequence": 802,
+    "tool": "blender_validate_scene",
+    "error": false
+  },
+  {
+    "sequence": 803,
+    "tool": "blender_validate_export",
+    "error": false
+  },
+  {
+    "sequence": 810,
+    "tool": "bash",
+    "error": false
+  },
+  {
+    "sequence": 816,
+    "tool": "bash",
+    "error": false
+  },
+  {
+    "sequence": 822,
+    "tool": "bash",
+    "error": false
+  },
+  {
+    "sequence": 828,
+    "tool": "bash",
+    "error": false
+  },
+  {
+    "sequence": 834,
+    "tool": "present",
+    "error": false
+  }
+]
