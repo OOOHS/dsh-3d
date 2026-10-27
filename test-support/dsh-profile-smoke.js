@@ -21,7 +21,8 @@ async function runtime(host, reportPath) {
   const { ctx } = await runProfile({ environment, profile, patchFiles: [], args: [] })
   try {
     const tools = ctx.tools.schemas().map((tool) => tool.name).filter((name) => name.startsWith('blender_') || name === 'review_reconstruction')
-    assert.equal(tools.length, 5)
+    for (const name of ['blender_scene', 'blender_execute', 'blender_edit', 'blender_view', 'blender_sculpt', 'blender_checkpoint', 'blender_import', 'blender_export', 'blender_validate_scene', 'blender_validate_export', 'blender_helper_catalog', 'blender_helper_run', 'blender_render_frames', 'blender_preview', 'blender_status', 'review_reconstruction']) assert.ok(tools.includes(name), name)
+    assert.equal(new Set(tools).size, tools.length)
     const workspace = await mkdtemp(join(process.env.DSH_HOME, 'workspace-'))
     const skills = (await ctx.skills.list({ cwd: workspace })).filter((skill) => skill.provider === 'dsh-3d')
     assert.equal(skills.length, 1)

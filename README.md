@@ -6,6 +6,10 @@ A [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) plugin for
 
 DSH 3D is developed from [CheshireJCat/blender](https://github.com/CheshireJCat/blender) (`dsh-blender` 0.2.3, commit `9bd95e97a61096cfae1edb0f88fcd2be54b0adee`). The upstream Git history, license files, skills, tools, and analysis helpers are preserved.
 
+## General Blender workspace
+
+The default modeler uses the mixed interface: Python and native controls share a live scene. Tasks can cover geometry, curves, modifiers, Geometry Nodes, materials, lighting, rigging, animation and reconstruction through Blender APIs. Native-only mode remains an explicitly selected experimental preset.
+
 ## Design principles
 
 DSH 3D aims to give agents a broad modeling environment, useful feedback and room to improve their own methods. Three principles guide development:
@@ -22,9 +26,9 @@ Grow the coverage, composability and discoverability of operations. Python editi
 
 Keep the default entry points compact, make detailed capabilities discoverable, and let agents compose operations into their own tools. Runtime-editable project code extends the action space as the task develops. Evaluate these capabilities through actual geometry changes and visual outcomes.
 
-### 3. Skill pruning: give exploration to the agent
+### 3. Skill pruning to enable autonomous exploration
 
-Keep the main skill focused on goals, available capabilities, execution contracts and acceptance evidence. Put detailed protocols and specialist references within reach as needed. Let the agent choose representations, component boundaries, methods, work order, experiments and candidate comparisons.
+Prune prescribed workflows and redundant instructions to give the agent room to explore its own methods. Keep the main skill focused on goals, available capabilities, execution contracts and acceptance evidence. Put detailed protocols and specialist references within reach as needed. This leaves representations, component boundaries, methods, work order, experiments and candidate comparisons under the agent's control.
 
 Review feedback and observed results guide those choices. Agents can revise their tools and approaches as they learn from the task; checkpoints preserve alternatives for comparison and recovery. The plugin supplies persistent state, feedback and room for exploration. The agent develops its working process within that environment.
 
@@ -34,12 +38,26 @@ The development version provides a shared live Blender workspace. Agents can alt
 
 Current capabilities include:
 
-- Seven default tools: `blender_scene`, `blender_execute`, `blender_sculpt`, `blender_view`, `blender_checkpoint`, `inspect_image`, and `review_reconstruction`.
+- Shared editing tools: `blender_scene`, `blender_execute`, `blender_edit`, `blender_sculpt`, `blender_view` and `blender_checkpoint`; observation/review and session operation notes are also available. Scene inspection supports opt-in object details; views support animation time selection.
 - Independent native DSH modeler/reviewer presets. The scoped reviewer receives observation and structured submission tools.
 - One concise modeling skill by default, with native brush guidance and optional reference-analysis helpers. The 29 upstream domain skills remain available through `registerModuleSkills: true` for legacy use.
-- Upstream file tools and 26 helpers remain available through `exposeLegacyTools:true`. Helper discovery returns a compact index, with full arguments requested by helper name. `enableSharedScene:false` selects the legacy file runtime.
+- Asset import/export, structural and round-trip validation, saved-scene preview, animation frame rendering and helper discovery are available by default. The 26 bundled helpers include maintenance utilities gated separately; discovery returns a compact index and per-helper arguments on demand. `exposeLegacyTools:true` adds duplicate file-based scene interfaces; `enableSharedScene:false` selects the legacy file runtime.
 
 ## Shared scene and reusable project tools
+
+### Editing feedback
+
+`blender_edit` includes persistent mesh selection, proportional transforms and selected-face extrusion, alongside object operations and sculpting. Base-density primitives retain simple topology for Edit Mode. The agent chooses which methods to combine.
+
+Optional brush previews show the intended path, visible hits and nominal footprint. Strokes and local mesh edits return a full viewport and a same-view before/after detail image, with measured changes. Viewport shading controls expose lighting, shadows and cavity; responses identify the current display and separate render settings. See [the interface contract and validation](docs/editing-feedback.md).
+
+## Native modeling experiment
+
+The additional **DSH 3D 原生建模实验** preset (`dsh-3d-native-modeler`) provides a constrained action-space comparison. Modeling uses standard primitives, native sculpt gestures, object transforms, duplication and assembly. `blender_edit` adds these object controls, solid materials, mesh-density preparation, cameras and lights to the same live scene. Dense primitives are immediately sculptable; voxel remesh prepares uniform density and fuses joined overlapping volumes. Object actions retain scene checkpoints for undo/redo, including intervening sculpt work; the brush interface retains individual stroke undo.
+
+This preset uses an agent-scoped tool allowlist enforced in presentation and dispatch. Its exposed capabilities cover native modeling, image observation, checkpoints, independent review and web reference lookup. The experiment closes arbitrary Blender Python, shell/process execution, file writes, external asset import, agent delegation and code-oriented skills. Its concise interface contract lives in `agents/native-modeler.json`; methods, work order and candidate exploration remain agent choices. The regular modeler preset continues to provide the mixed code-and-brush environment.
+
+Compare visual quality, effective geometry changes, feedback-driven correction and resource use. Brush counts record how the agent acts within the constrained interface. Reconstruction quality remains an empirical question.
 
 `blender_execute` edits the current scene and creates an empty scene on first use. `blender_scene` selects explicit new/open starting points, inspects object facts and saves snapshots without closing the scene. Python and native brushes operate on the same process and meshes; Python exceptions restore the preceding scene. Working files, views and journals live under `.dsh-blender/scenes/<scene_id>/`.
 
@@ -55,7 +73,7 @@ The model chooses and revises its methods, work order and component boundaries. 
 
 `blender_checkpoint` provides independent `save`, `list`, `get` and `restore` operations. It archives scenes, packable resources, optional comparison images and free-form notes; `parent_id` records a candidate's origin. Any saved alternative can be restored into a working file, including earlier candidates after a sculpt commit. Final acceptance validates the selected current scene and render hashes.
 
-Brush views highlight the target in orange, show context in gray, and return projected bounds and raycast-confirmed surface samples. `isolate` displays a component alone; `probe_points` returns hit objects, world locations and normals for image coordinates. Display colors are temporary. Fourteen native geometry brushes cover contour, volume, creases, pinching and surface shaping. The current brush bridge still requires fixed-topology base meshes.
+Brush views highlight the target in orange, show context in gray, and return projected bounds and raycast-confirmed surface samples. `isolate` displays a component alone; `probe_points` returns hit objects, world locations and normals for image coordinates. Display colors are temporary. Brush assets and editable parameters are discovered on demand from Blender Essentials and RNA. The existing fourteen aliases remain available, alongside installed Pose, Boundary, Cloth, Mask and Face Sets variants. Native mode, selection, active tool and brush settings persist across calls. Stroke feedback includes effective radius and measured geometry/attribute changes; native drag gestures may continue beyond the silhouette. The current brush bridge still requires fixed-topology base meshes.
 
 The shared execution interface, editable project tools and optional legacy file interfaces can all support candidate exploration. The agent chooses which scenes and observations to retain and revise.
 

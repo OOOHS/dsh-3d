@@ -12,6 +12,9 @@ from types import SimpleNamespace
 import bpy
 import bmesh
 import mathutils
+from native_editor import mesh_state
+from scene_fingerprint import object_details
+from dsh_blender_driver import _object_detail
 
 
 class TailOutput(io.StringIO):
@@ -31,9 +34,11 @@ class SharedScene:
         self.working = Path(self.config['working_path'])
         self.brush_base = None
         self.last_brush_base = None
+        self.native_modeling = None
         self.state['highlight'] = False
         self.api = SimpleNamespace(inspect=self.inspect, select=self.select,
-                                   view=self.view, stroke=self.stroke, render=self.render)
+                                   view=self.view, stroke=self.stroke, render=self.render,
+                                   editor=self.host['editor'].snapshot, configure=self.configure)
 
     def target(self):
         obj = bpy.data.objects.get(self.config.get('object_name') or '')
@@ -43,11 +48,17 @@ class SharedScene:
         layer = getattr(bpy.context, 'view_layer', None)
         return getattr(bpy.context, 'object', None) or (layer.objects.active if layer else None)
 
+    def finish_brush(self):
+        """Retain edits when leaving the native brush context."""
+        self.brush_base = None
+        self.state['highlight'] = False
+        if self.state.get('isolate'):
+            self.host['set_view']({'isolate': False})
+
     def object_mode(self):
         if self.active() and self.active().mode != 'OBJECT':
             bpy.ops.object.mode_set(mode='OBJECT')
-        if self.state.get('isolate'):
-            self.host['set_view']({'isolate': False})
+        self.finish_brush()
 
     def save(self, path):
         path = Path(path)
@@ -65,7 +76,7 @@ class SharedScene:
 
     def reset_history(self):
         self.state['view_id'] = None
-        self.state['hashes'] = [self.host['mesh_info']()['geometry_hash']]
+        self.state['hashes'] = [self.host['history_key']()]
         self.state['cursor'] = 0
 
     def initialize(self):
@@ -76,6 +87,7 @@ class SharedScene:
         self.object_mode()
         bpy.context.preferences.edit.use_global_undo = True
         bpy.context.preferences.edit.undo_steps = 256
+        bpy.context.preferences.view.smooth_view = 0
         self.config['object_name'] = None
         self.host['set_view']({'preset': self.config.get('preset', 'front'), 'projection': 'ORTHO'})
         with self.host['viewport']() as (_, _, rv):
@@ -91,12 +103,15 @@ class SharedScene:
             digest = hashlib.sha256()
             digest.update(repr((obj.type, list(obj.matrix_world), obj.hide_viewport, obj.hide_render)).encode())
             if obj.type == 'MESH':
+                if obj.mode == 'EDIT':
+                    obj.update_from_editmode()
                 coords = array('f', [0.0]) * (len(obj.data.vertices) * 3)
                 obj.data.vertices.foreach_get('co', coords)
                 indices = array('i', [0]) * len(obj.data.loops)
                 obj.data.loops.foreach_get('vertex_index', indices)
                 digest.update(coords.tobytes())
                 digest.update(indices.tobytes())
+                digest.update(mesh_state(obj)['attributes_hash'].encode())
                 digest.update(repr([(m.type, m.name) for m in obj.modifiers]).encode())
                 for slot in obj.material_slots:
                     mat = slot.material
@@ -110,13 +125,19 @@ class SharedScene:
                                 if hasattr(socket, 'default_value'):
                                     digest.update(repr((socket.name, socket.default_value[:]
                                                        if hasattr(socket.default_value, '__len__') else socket.default_value)).encode())
+            digest.update(json.dumps(object_details(obj), sort_keys=True, default=str).encode())
             signatures[obj.name] = digest.hexdigest()
         return signatures
 
-    def inspect(self, object_names=None, limit=40):
+    def inspect(self, object_names=None, limit=40, detail=False, evaluated=True):
         limit = max(1, min(200, int(limit)))
         objects = [bpy.data.objects.get(name) for name in object_names] if object_names else list(bpy.context.scene.objects)
         items = []
+        if detail:
+            for obj in objects[:limit]:
+                if obj and obj.mode == 'EDIT':
+                    obj.update_from_editmode()
+            bpy.context.view_layer.update()
         for obj in objects[:limit]:
             if obj is None:
                 continue
@@ -131,7 +152,13 @@ class SharedScene:
                           'sculpt_prerequisites': {'base_mesh': mesh,
                               'shape_keys': bool(obj.data.shape_keys) if mesh else False,
                               'multires': any(m.type == 'MULTIRES' for m in obj.modifiers)}})
-        return {'object_count': len(bpy.context.scene.objects), 'objects': items,
+            if detail:
+                items[-1]['detail'] = _object_detail(obj, evaluated=evaluated)
+        scene = bpy.context.scene
+        return {'object_count': len(scene.objects), 'objects': items,
+                'missing': [name for name in (object_names or []) if bpy.data.objects.get(name) is None],
+                'timeline': {'current': scene.frame_current, 'start': scene.frame_start,
+                             'end': scene.frame_end, 'fps': scene.render.fps / scene.render.fps_base},
                 'truncated': len(objects) > limit,
                 'active_object': self.active().name if self.active() else None,
                 'mode': self.active().mode if self.active() else 'OBJECT'}
@@ -164,6 +191,26 @@ class SharedScene:
         self.host['set_view']({'frame': True, **view_options})
         return self.inspect([obj.name])
 
+    def configure(self, object_name=None, mode=None, tool=None):
+        """Set Blender's actual selection/mode/tool; geometry remains in the live scene."""
+        if object_name and (not self.active() or self.active().name != object_name):
+            self.select(object_name)
+        if mode and (not self.active() or self.active().mode != mode):
+            if mode == 'SCULPT':
+                if not self.active():
+                    raise ValueError('Select a mesh object before entering Sculpt Mode.')
+                self.select(self.active().name, sculpt=True, frame=False)
+            else:
+                self.finish_brush()
+                with self.host['viewport']():
+                    bpy.ops.object.mode_set(mode=mode)
+                self.reset_history()
+        if tool:
+            with self.host['viewport']():
+                bpy.ops.wm.tool_set_by_id(name=tool)
+        self.persist()
+        return self.host['editor'].snapshot()
+
     def view(self, **options):
         if options.get('object_name'):
             self.select(options.pop('object_name'))
@@ -175,7 +222,13 @@ class SharedScene:
         self.persist()
         return value
 
-    def render(self, output_path=None, camera=None, width=768, height=768, samples=32, **_):
+    @staticmethod
+    def validate_frame(value):
+        if value is not None and (isinstance(value, bool) or not isinstance(value, int) or not -1048574 <= value <= 1048574):
+            raise ValueError('time_frame must be an integer in -1048574..1048574.')
+
+    def render(self, output_path=None, camera=None, width=768, height=768, samples=32, time_frame=None, transparent=None, **_):
+        self.validate_frame(time_frame)
         width, height, samples = int(width), int(height), int(samples)
         if not (16 <= width <= 4096 and 16 <= height <= 4096 and 1 <= samples <= 512):
             raise ValueError('Render dimensions: 16..4096; samples: 1..512.')
@@ -194,9 +247,16 @@ class SharedScene:
         settings = scene.render
         previous = (scene.camera, settings.filepath, settings.resolution_x, settings.resolution_y,
                     settings.resolution_percentage, settings.image_settings.file_format)
+        old_time = (scene.frame_current, scene.frame_subframe)
+        old_transparent = settings.film_transparent
+        rendered_frame = scene.frame_current if time_frame is None else time_frame
         old_samples = scene.cycles.samples
         old_eevee = scene.eevee.taa_render_samples if hasattr(scene, 'eevee') else None
         try:
+            if time_frame is not None:
+                scene.frame_set(time_frame)
+            if transparent is not None:
+                settings.film_transparent = bool(transparent)
             scene.camera = cam
             settings.filepath = str(path)
             settings.resolution_x, settings.resolution_y, settings.resolution_percentage = width, height, 100
@@ -208,11 +268,14 @@ class SharedScene:
         finally:
             (scene.camera, settings.filepath, settings.resolution_x, settings.resolution_y,
              settings.resolution_percentage, settings.image_settings.file_format) = previous
+            scene.frame_set(old_time[0], subframe=old_time[1])
+            settings.film_transparent = old_transparent
             scene.cycles.samples = old_samples
             if old_eevee is not None:
                 scene.eevee.taa_render_samples = old_eevee
         record = {'path': str(path), 'width': width, 'height': height, 'kind': 'render',
                   'scene_id': self.config['edit_id'], 'revision': self.state['revision'], 'camera': cam.name,
+                  'time_frame': rendered_frame,
                   'scene_sha256': hashlib.sha256(self.working.read_bytes()).hexdigest(),
                   'image_sha256': hashlib.sha256(path.read_bytes()).hexdigest()}
         self.host['write_json'](path.with_suffix('.png.json'), record)
@@ -220,11 +283,11 @@ class SharedScene:
 
     def python(self, command):
         before = self.signatures()
+        previous_context = (self.config.get('object_name'), self.active().mode if self.active() else 'OBJECT')
         recovery = self.root / 'before-python.blend'
         self.save(recovery)
-        self.object_mode()
-        self.brush_base = None
-        self.state['highlight'] = False
+        if command.get('mode'):
+            self.configure(mode=command['mode'])
         stream = TailOutput()
         namespace = {'bpy': bpy, 'bmesh': bmesh, 'mathutils': mathutils, 'dsh': self.api,
                      'workspace': self.config['workspace'], 'params': command.get('params', {}),
@@ -257,7 +320,10 @@ class SharedScene:
         after = self.signatures()
         changed = [name for name in sorted(before.keys() | after.keys()) if before.get(name) != after.get(name)]
         self.state['revision'] += 1
-        self.reset_history()
+        if changed or previous_context != (self.config.get('object_name'), active.mode if active else 'OBJECT'):
+            self.reset_history()
+            with self.host['viewport']():
+                bpy.ops.ed.undo_push(message='DSH Python edit')
         self.persist()
         if not before and after:
             with self.host['viewport']():
@@ -265,7 +331,7 @@ class SharedScene:
         return {'script_result': value, 'stdout': stream.getvalue()[-20000:],
                 'source_sha256': source_hash, 'source_snapshot': str(source_snapshot),
                 'changed_objects': changed[:80], 'changed_object_count': len(changed),
-                'change_scope': 'Object presence, transforms, base mesh coordinates/indices, material node inputs; inspect other effects as needed.',
+                'change_scope': 'Object transforms, base mesh, curves, modifier RNA, material nodes/links, constraints and animation RNA. Bounded RNA traversal; simulation caches, external resources and unlisted data require direct inspection.',
                 **({'tool_path': command['tool_path'], 'tool_sha256': command['tool_sha256']} if command.get('tool_path') else {})}
 
     def execute(self, command):
@@ -273,16 +339,36 @@ class SharedScene:
         extra = {}
         if action == 'python':
             extra = self.python(command)
+        elif action == 'native_edit':
+            if self.native_modeling is None:
+                from native_modeling import NativeModeling
+                self.native_modeling = NativeModeling(self)
+            extra = self.native_modeling.execute(command)
+        elif action == 'configure_scene':
+            extra['editor'] = self.configure(**{k: command[k] for k in ('object_name', 'mode', 'tool') if k in command})
+        elif action in ('brushes', 'settings'):
+            extra = getattr(self.host['editor'], 'catalog' if action == 'brushes' else 'settings')(**{k: command[k] for k in ('query', 'offset', 'limit', *(['group'] if action == 'settings' else [])) if k in command})
+        elif action == 'configure':
+            with self.host['viewport']():
+                extra['editor'] = self.host['editor'].configure(command)
+            self.persist()
         elif action == 'select':
             extra = self.select(command['object_name'], sculpt=True,
                                 **{key: command[key] for key in ('preset', 'highlight', 'isolate') if key in command})
             self.persist()
         elif action == 'stroke':
             extra = self.stroke(**{key: value for key, value in command.items() if key != 'action'})
+        elif action == 'preview':
+            extra = self.host['preview'](command)
         elif action in ('undo', 'redo'):
             self.host['history'](action)
             self.persist()
         elif action == 'view':
+            self.validate_frame(command.get('time_frame'))
+            if command.get('time_frame') is not None:
+                bpy.context.scene.frame_set(command['time_frame'])
+                self.state['revision'] += 1
+                self.persist()
             self.host['set_view'](command)
             if command.get('probe_points'):
                 with self.host['viewport']() as (_, region, rv):
@@ -290,7 +376,8 @@ class SharedScene:
         elif action == 'render':
             extra['view'] = self.render(**{key: value for key, value in command.items() if key != 'action'})
         elif action == 'inspect':
-            extra = self.inspect(command.get('object_names'), command.get('limit', 40))
+            extra = self.inspect(command.get('object_names'), command.get('limit', 40),
+                                 command.get('detail', False), command.get('evaluated', True))
         elif action in ('commit', 'save'):
             if action == 'commit':
                 self.object_mode()
@@ -301,8 +388,9 @@ class SharedScene:
             extra = self.save(command['save_path']) if command.get('save_path') else {'saved_path': str(self.working)}
         elif action == 'discard':
             if self.brush_base:
+                entry = self.brush_base
                 self.object_mode()
-                bpy.ops.wm.open_mainfile(filepath=str(self.brush_base), load_ui=False)
+                bpy.ops.wm.open_mainfile(filepath=str(entry), load_ui=False)
                 self.config['object_name'] = None
                 self.brush_base = None
                 self.state['highlight'] = False
@@ -316,6 +404,10 @@ class SharedScene:
             extra['closed'] = True
         elif action != 'status':
             raise ValueError('Unknown shared scene action: ' + action)
+        active = self.active()
+        self.config['object_name'] = active.name if active and active.type == 'MESH' else None
+        if not active or active.mode != 'SCULPT':
+            self.finish_brush()
         return {**self.host['result'](image=False), **self.inspect(limit=12),
                 'status': 'closed' if self.state['closed'] else 'open', 'blendPath': str(self.working),
                 'brush_base_path': self.last_brush_base, 'blender_version': bpy.app.version_string, **extra}

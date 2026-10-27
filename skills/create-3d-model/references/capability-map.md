@@ -10,7 +10,7 @@
 
 ## Loading rule
 
-These 29 legacy modules are optional technical references. With registerModuleSkills:true they can be loaded through the skill tool; otherwise their files remain readable as project resources. With exposeLegacyTools:true, blender_helper_catalog returns a compact index; query a helper name for its exact arguments. Choose relevant material according to the current evidence and method.
+These 29 legacy modules are optional technical references. With registerModuleSkills:true they can be loaded through the skill tool; otherwise their files remain readable as project resources. With enableHelpers:true (default), blender_helper_catalog returns a compact index; query a helper name for its exact arguments. Choose relevant material according to the current evidence and method.
 
 ## Orchestration and production
 

@@ -1,0 +1,37 @@
+[
+  {
+    "id": "foundation:silhouette",
+    "title": "轮廓、弯曲与局部比例 / silhouette bend grab",
+    "content": "连续网格可用 Grab、Elastic Grab 或比例编辑改变局部轮廓。先观察目标并定位活动区和保留区，影响半径覆盖需要连续过渡的范围。拖动从可见表面开始，末端可超出轮廓。小范围移动会形成局部凸起，大范围影响可形成柔和弯曲。检查另一视角的厚度和固定区域位移。Pose 的可用资产与设置通过 brushes/settings 查询。"
+  },
+  {
+    "id": "foundation:volume",
+    "title": "体积增减与粗体块塑形 / volume clay inflate",
+    "content": "Draw、Clay、Clay Strips 可从有足够顶点的初始体块建立体积；Inflate 沿局部法线扩张。反向笔触可减体积。根据想改变的轮廓和表面选择画笔，观察新增体积是否符合预期。单个视角的凸起可能伴随深度偏差。记录半径对应的目标尺度、强度、实际效果。"
+  },
+  {
+    "id": "foundation:transition",
+    "title": "连接、平滑与平面 / smooth flatten transition",
+    "content": "已连接网格的连接处可以先补足凹陷体积，再按需要 Smooth。Smooth 会收缩并消除细节；Flatten/Scrape 适合建立平面和调整起伏。分离对象需要先决定是否连接；join 保留分离网格，重叠体块可通过 remesh 融合。重网格化会改变拓扑和细节，按目标尺度选择 voxel_size。"
+  },
+  {
+    "id": "foundation:detail",
+    "title": "沟槽、褶皱与收束 / crease pinch",
+    "content": "Crease、Draw Sharp 可刻出沟槽，Pinch 收拢邻近表面形成窄过渡；其实际表现受网格密度、半径和方向影响。先判断所需凹凸关系，通过侧视确认深度，保留合适的边缘宽度。查询安装的笔刷资产和原生设置以确认具体行为。"
+  },
+  {
+    "id": "foundation:selection",
+    "title": "选区、比例编辑与挤出 / mesh selection extrude",
+    "content": "mesh_select 用当前目标的最新全视图矩形选择顶点、边或面；select_through 可选择背面元素。读取选中数量确认范围。mesh_transform 对选区应用变换，proportional_radius 使用世界单位控制周围影响。mesh_extrude 从选面延伸结构。查看变换中心、选区覆盖和背面变化，必要时切换视角重新选择。"
+  },
+  {
+    "id": "foundation:aim",
+    "title": "画笔定位、遮挡与保护 / brush aiming mask",
+    "content": "begin 选择网格并返回视图、边界及表面采样。configure 设置画笔，preview 显示当前画笔名义范围与命中，stroke 接收最新 view_id 和全图归一化坐标，原点左上。隔离可减少遮挡；Mask、前表面过滤和对称设置可控制影响范围，具体字段用 settings 查询。以返回图定位；局部对照图使用独立裁切坐标。"
+  },
+  {
+    "id": "foundation:feedback",
+    "title": "反馈、撤销与经验 / feedback undo",
+    "content": "比较前后轮廓、局部体积、实际位移和未预期变化。无变化时检查命中、遮挡、网格密度、遮罩及参数；形变过大时可撤销后缩小影响范围或调整强度。commit 或离开雕刻模式保留当前几何，活动雕刻边界内 discard 恢复进入状态。经验可记录操作条件、证据和局限，后续观察可更新结论。"
+  }
+]

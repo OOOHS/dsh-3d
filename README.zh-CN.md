@@ -2,7 +2,7 @@
 
 [English](README.md)
 
-面向 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的 Blender 建模与参考图像三维重建插件。
+面向 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的通用 Blender agent 工作台。默认同时开放 Python、网格编辑、原生画笔、场景观察及可复用工具，支持建模、场景、材质、灯光、动画与重建任务。
 
 项目基于 [CheshireJCat/blender](https://github.com/CheshireJCat/blender) 的 `dsh-blender` 0.2.3 开发，起点提交为 `9bd95e97a61096cfae1edb0f88fcd2be54b0adee`；保留上游 Git 历史、许可、工具、skills 和分析脚本。
 
@@ -22,9 +22,9 @@ DSH 3D 希望给 agent 足够宽的建模操作空间、有效反馈，以及改
 
 保持默认入口精简，详细能力按需发现，并让 agent 把已有操作组合成自己的工具。运行中可修改的项目代码，让操作空间随着任务发展而扩展。通过实际几何变化和视觉结果评估这些能力。
 
-### 3. Skill prune：精简指令，探索放权
+### 3. Skill prune：通过精简指令实现探索放权
 
-主 skill 聚焦目标、能力范围、执行契约与验收依据；详细协议和专业资料按需读取。表示方法、组件边界、建模手段、工作顺序、试验和候选比较由 agent 自主选择。
+裁剪预设工作流与冗余指令，目的是把方法探索的决定权交给 agent。主 skill 聚焦目标、能力范围、执行契约与验收依据；详细协议和专业资料按需读取，为 agent 自主选择表示方法、组件边界、建模手段、工作顺序、试验和候选比较留出空间。
 
 评审反馈与实际观察为选择提供依据。Agent 可以随任务经验修改工具和方法，通过检查点保留可比较、可恢复的候选。插件提供持续状态、反馈与探索空间，agent 在其中发展自己的工作方式。
 
@@ -34,12 +34,20 @@ DSH 3D 希望给 agent 足够宽的建模操作空间、有效反馈，以及改
 
 当前能力包括：
 
-- 默认 7 个工具：`blender_scene`、`blender_execute`、`blender_sculpt`、`blender_view`、`blender_checkpoint`、`inspect_image` 和 `review_reconstruction`。
+- 共享编辑入口包括 `blender_scene`、`blender_execute`、`blender_edit`、`blender_sculpt`、`blender_view` 和 `blender_checkpoint`，并提供图像观察、评审和会话经验读写。场景检查支持按需详情，视图支持动画时间选择。
 - 两份独立的原生 agent 配置：DSH 3D 建模与 DSH 3D 评审。评审角色提供图像观察和结构化提交两个工具。
 - 默认提供 1 个精简建模 skill，附带原生画笔说明和可选分析工具。29 个上游领域 skill 保留为兼容资料，可通过 `registerModuleSkills: true` 显式启用。
-- 26 个上游分析与验证 helper 作为兼容资料保留；`exposeLegacyTools:true` 开放文件工具与 helper，目录默认返回简短索引。`enableSharedScene:false` 选择旧版文件执行方式。
+- 默认开放资产导入导出、结构与回读验证、快照预览、动画抽帧和辅助工具发现。26 个上游 helper 中的维护工具单独控制；目录返回简短索引，按名称读取完整参数。`exposeLegacyTools:true` 增加重复的旧版文件场景接口；`enableSharedScene:false` 选择旧版文件执行方式。
 
 ## 共享工作场景与项目工具
+
+### 原生建模对照实验
+
+新增 **DSH 3D 原生建模实验** 配置（`dsh-3d-native-modeler`），用于观察受限动作空间下的建模表现。几何构造通过基本体、原生雕刻、物体变换、复制和组合完成；`blender_edit` 提供这些原生对象操作，以及纯色材质、网格密度、相机和灯光控制，所有操作使用同一实时场景。基本体直接提供可雕刻的网格；体素重网格化可准备均匀密度，也能融合已合并的重叠体积。对象操作提供场景级撤回和重做，并保留其间的雕刻结果；笔刷接口继续提供单笔撤回。
+
+配置通过会话级工具白名单控制展示与实际调用。开放能力覆盖原生建模、图像观察、检查点、独立评审和联网参考查询；任意 Blender Python、终端与进程执行、文件写入、外部资产导入、代理委派和代码导向 skill 属于本轮实验收起的能力。精简接口说明位于 `agents/native-modeler.json`；建模方法、工作顺序和候选探索由 agent 选择。常规建模配置继续提供代码和画笔混合环境。
+
+实验关注视觉质量、有效几何变化、依据反馈修正的能力和资源消耗；笔刷次数用于记录受限接口中的行为。重建质量通过实际结果评估。
 
 `blender_execute` 直接修改当前场景；第一次调用会创建空场景。`blender_scene` 的 `new`、`open` 明确选择起点，`inspect` 查询组件事实，`save` 保存项目快照并保持场景打开。代码和笔刷操作使用同一个 Blender 进程与网格；代码异常时恢复到操作前的场景。每次操作保存的工作文件、视图和日志位于 `.dsh-blender/scenes/<scene_id>/`。
 
@@ -55,7 +63,7 @@ Agent 可以用普通文件工具编写 `tools/*.py`，定义 `run(params)`，�
 
 `blender_checkpoint` 独立提供 `save`、`list`、`get`、`restore`：归档工程、可打包资源、可选对照图片与方法备注，用 `parent_id` 记录来源；任意候选都可以恢复到工作文件继续编辑。雕刻提交后的场景同样可以作为分支起点，较早候选也保持可用。最终验收核对所选工程和渲染的当前哈希。
 
-画笔视图默认用橙色标出目标、灰色显示上下文，返回目标的屏幕范围与射线确认的表面点；`isolate` 可独立观察组件，`probe_points` 可查询图像坐标命中的对象、位置与法线。显示颜色为临时观察效果，原场景材质保持原值。原生几何笔刷扩展为 14 种，覆盖体积、轮廓、尖锐褶线、收拢和表面塑形。固定拓扑基础网格仍是当前桥接接口的数据要求。
+画笔视图默认用橙色标出目标、灰色显示上下文，返回目标的屏幕范围与射线确认的表面点；`isolate` 可独立观察组件，`probe_points` 可查询图像坐标命中的对象、位置与法线。显示颜色为临时观察效果，原场景材质保持原值。笔刷资产和可编辑参数按需从 Blender Essentials 与 RNA 中发现，保留原有 14 个别名，并可选择本机安装的 Pose、Boundary、Cloth、Mask、Face Sets 等资产。原生模式、选择、活动工具和笔刷设置跨调用保留；笔触返回有效半径与几何、属性变化，拖拽手势可延伸到轮廓外。固定拓扑基础网格仍是当前桥接接口的数据要求。
 
 共享场景的观察与操作返回真实视图；显式开启的旧版文件工具可用于处理独立文件或后台批处理。
 
@@ -152,3 +160,9 @@ RUN_HELPER_TESTS=1 pnpm test
 - [Blender](https://www.blender.org/)：插件使用的三维创作软件。
 
 插件代码保留上游 [MIT 许可](LICENSE)，其他来源说明及保留的许可文件见 [NOTICE](NOTICE) 与 `skills/create-3d-model/`。Blender 是使用其自身许可的独立项目；DSH 3D 是社区开发项目。
+
+## 编辑与反馈（dev.14）
+
+`blender_edit` 新增持久选区、比例变形和选中面挤出；`density:"base"` 保留适合编辑模式的简单基本体拓扑。模型可以在这些操作、对象组合、代码和画笔之间自主选择。
+
+可选的画笔预览显示落点、路径和名义范围；实际修改返回完整视口、同视角局部前后对照，以及几何变化、位移和选区证据。视口光照、阴影和凹凸增强可调整，反馈说明当前显示方式与正式渲染设置。[接口说明与验证记录](docs/editing-feedback.md)列出坐标契约、边界和社区参考。

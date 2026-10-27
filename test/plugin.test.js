@@ -20,7 +20,7 @@ const config = {
   registerModuleSkills: false,
 }
 
-test('registers one default skill and seven shared-workspace tools', () => {
+test('registers one default skill and shared-workspace and asset tools', () => {
   const tools = []
   const skills = []
   apply({
@@ -29,13 +29,25 @@ test('registers one default skill and seven shared-workspace tools', () => {
   }, config)
 
   assert.deepEqual(tools.map((tool) => tool.name), [
+    'blender_status',
+    'blender_import',
+    'blender_preview',
+    'blender_render_frames',
+    'blender_export',
+    'blender_validate_scene',
+    'blender_validate_export',
+    'blender_helper_catalog',
+    'blender_helper_run',
     'blender_scene',
     'blender_execute',
+    'blender_edit',
     'blender_checkpoint',
     'blender_sculpt',
     'blender_view',
     'review_reconstruction',
     'inspect_image',
+    'modeling_notes_read',
+    'modeling_notes_write',
   ])
   assert.equal(skills.length, 1)
   assert.equal(skills[0].name, 'create-3d-model')
@@ -108,4 +120,18 @@ test('lossless JSON normalization removes negative zero recursively', () => {
   assert.equal(Object.is(normalized.scalar, -0), false)
   assert.equal(Object.is(normalized.nested[0], -0), false)
   assert.equal(Object.is(normalized.nested[1].value, -0), false)
+})
+
+test('asset capabilities survive default transport and compatibility registration stays unique', () => {
+  for (const options of [{}, {exposeLegacyTools:true}, {enableSharedScene:false}]) {
+    const tools=[]
+    apply({tools:{register(t){tools.push(t)}}}, {...config,registerSkill:false,...options})
+    const names=tools.map(t=>t.name)
+    assert.equal(new Set(names).size,names.length)
+    for(const name of ['blender_import','blender_export','blender_validate_scene','blender_validate_export','blender_preview','blender_render_frames','blender_helper_catalog','blender_helper_run'])assert.ok(names.includes(name))
+  }
+  const tools=[]
+  apply({tools:{register(t){tools.push(t)}}},{...config,registerSkill:false,enableHelpers:false})
+  assert.equal(tools.some(t=>t.name.startsWith('blender_helper_')),false)
+  assert.ok(tools.some(t=>t.name==='blender_export'))
 })

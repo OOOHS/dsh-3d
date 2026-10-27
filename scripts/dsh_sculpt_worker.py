@@ -1,6 +1,5 @@
 """Persistent native Blender sculpt worker. All bpy work runs on Blender's main thread."""
 import argparse
-from array import array
 from contextlib import contextmanager
 import hashlib
 import json
@@ -16,6 +15,10 @@ import bpy
 from mathutils import Quaternion, Vector
 from bpy_extras import view3d_utils
 
+sys.path.insert(0, str(Path(__file__).parent))
+from native_editor import NativeEditor, coordinates, mesh_state, displacement
+from editing_feedback import aim_overlay, comparison
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--config', required=True)
 args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
@@ -25,6 +28,7 @@ BRUSHES = config['brushes']
 state = {'revision': 0, 'cursor': 0, 'hashes': [], 'view_id': None, 'closed': False,
          'highlight': True, 'isolate': False}
 shared = None
+editor = None
 last_activity = time.monotonic()
 last_recovery = 0
 
@@ -41,9 +45,9 @@ def journal(event, **fields):
 
 
 def object_now():
-    obj = bpy.data.objects.get(config['object_name'])
+    obj = bpy.context.view_layer.objects.active if config.get('shared') else bpy.data.objects.get(config['object_name'])
     if obj is None or obj.type != 'MESH':
-        raise ValueError('The selected mesh is unavailable; discard this editing session.')
+        raise ValueError('Select an existing mesh with blender_scene configure object_name, or blender_sculpt begin object_name. blender_scene inspect lists available objects.')
     return obj
 
 
@@ -54,20 +58,17 @@ def viewport():
     if area is None:
         raise RuntimeError('Keep a 3D Viewport open in the editing Blender window.')
     region = next(r for r in area.regions if r.type == 'WINDOW')
-    with bpy.context.temp_override(window=window, area=area, region=region):
+    with bpy.context.temp_override(window=window, area=area, region=region,
+                                   space_data=area.spaces.active, region_data=area.spaces.active.region_3d):
         yield area, region, area.spaces.active.region_3d
 
 
 def mesh_info():
-    if config.get('shared') and not (bpy.data.objects.get(config.get('object_name') or '') and
-                                     bpy.data.objects.get(config.get('object_name') or '').type == 'MESH'):
+    active = bpy.context.view_layer.objects.active
+    if config.get('shared') and (active is None or active.type != 'MESH'):
         return {'object_name': None, 'vertices': 0, 'faces': 0, 'geometry_hash': hashlib.sha256(b'').hexdigest()}
     obj = object_now()
-    coords = array('f', [0.0]) * (len(obj.data.vertices) * 3)
-    obj.data.vertices.foreach_get('co', coords)
-    digest = hashlib.sha256(coords.tobytes()).hexdigest()
-    return {'object_name': obj.name, 'vertices': len(obj.data.vertices),
-            'faces': len(obj.data.polygons), 'geometry_hash': digest}
+    return {'object_name': obj.name, **mesh_state(obj)}
 
 
 def recovery():
@@ -82,26 +83,38 @@ def surface_hit(point, region, rv):
     mouse = (point[0] * region.width, (1 - point[1]) * region.height)
     origin = view3d_utils.region_2d_to_origin_3d(region, rv, mouse)
     direction = view3d_utils.region_2d_to_vector_3d(region, rv, mouse)
-    obj = bpy.data.objects.get(config.get('object_name') or '') if config.get('shared') else object_now()
+    obj = bpy.context.view_layer.objects.active if config.get('shared') else object_now()
     depsgraph = bpy.context.evaluated_depsgraph_get()
-    if state['isolate'] and obj:
-        evaluated = obj.evaluated_get(depsgraph)
+    # Scene.ray_cast can include viewport-hidden objects. Match the visible editor.
+    nearest = None
+    space = bpy.context.space_data
+    for candidate in bpy.context.scene.objects:
+        if candidate.type != 'MESH' or not candidate.visible_get(view_layer=bpy.context.view_layer, viewport=space):
+            continue
+        if state['isolate'] and candidate != obj:
+            continue
+        evaluated = candidate.evaluated_get(depsgraph)
+        if abs(evaluated.matrix_world.determinant()) < 1e-12:
+            continue
         inverse = evaluated.matrix_world.inverted()
         hit, location, normal, face = evaluated.ray_cast(inverse @ origin, inverse.to_3x3() @ direction)
+        if not hit:
+            continue
         location = evaluated.matrix_world @ location
         normal = (evaluated.matrix_world.inverted().transposed().to_3x3() @ normal).normalized()
-        hit_obj = obj
-    else:
-        hit, location, normal, face, hit_obj, _ = bpy.context.scene.ray_cast(depsgraph, origin, direction)
-    return {'point': list(point[:2]), 'hit': bool(hit),
-            'object_name': hit_obj.original.name if hit and hit_obj else None,
-            'target': bool(hit and hit_obj and hit_obj.original == obj),
-            'location': list(location) if hit else None,
-            'normal': list(normal) if hit else None, 'face_index': face if hit else None}
+        distance = (location-origin).length
+        if nearest is None or distance < nearest[0]:
+            nearest = (distance, candidate, location, normal, face)
+    return {'point': list(point[:2]), 'hit': nearest is not None,
+            'object_name': nearest[1].name if nearest else None,
+            'target': bool(nearest and nearest[1] == obj),
+            'location': list(nearest[2]) if nearest else None,
+            'normal': list(nearest[3]) if nearest else None, 'face_index': nearest[4] if nearest else None}
 
 
 def target_evidence(region, rv):
-    if config.get('shared') and not config.get('object_name'):
+    active = bpy.context.view_layer.objects.active
+    if config.get('shared') and (active is None or active.type != 'MESH'):
         return {'object_name': None, 'screen_bounds': None, 'surface_samples': []}
     obj = object_now()
     projected = [view3d_utils.location_3d_to_region_2d(region, rv, obj.matrix_world @ Vector(corner))
@@ -158,25 +171,72 @@ def observe():
              render.resolution_percentage, render.image_settings.file_format) = old
         state['view_id'] = view_id
         state['view_signature'] = view_signature(rv, region)
-        return {'view_id': view_id, 'revision': state['revision'], 'path': str(path),
+        value = {'view_id': view_id, 'revision': state['revision'], 'path': str(path),
                 'width': width, 'height': height, 'coordinates': 'normalized, origin top-left',
                 'rotation': list(rv.view_rotation), 'location': list(rv.view_location),
                 'distance': rv.view_distance, 'projection': rv.view_perspective,
                 'highlight': state['highlight'], 'isolate': state['isolate'],
                 'display': 'Orange target, gray context; temporary geometry colors' if state['highlight'] else 'Scene viewport appearance',
-                'target': target_evidence(region, rv)}
+                'target': target_evidence(region, rv),
+                'shading': {key: getattr(shading, key) for key in ('type','light','color_type','show_shadows','show_cavity')},
+                'purpose': 'Viewport observation and normalized editing coordinates'}
+        state['last_view'] = value
+        return value
 
 
 def view_signature(rv, region):
+    active = bpy.context.view_layer.objects.active
     return [*rv.view_rotation, *rv.view_location, rv.view_distance,
-            rv.view_perspective, region.width, region.height]
+            rv.view_perspective, region.width, region.height,
+            active.name if active else None, active.mode if active else None,
+            *[v for row in rv.perspective_matrix for v in row],
+            *([v for row in active.matrix_world for v in row] if active else []),
+            history_key() if active and active.type == 'MESH' else None,
+            state['revision'], state['isolate'], state['highlight'],
+            [(o.name, o.hide_get(), o.hide_viewport, [v for row in o.matrix_world for v in row])
+             for o in bpy.context.scene.objects]]
+
+
+def require_view(command):
+    with viewport() as (_, region, rv):
+        rv.update()
+        if command.get('view_id') != state['view_id'] or state.get('view_signature') != view_signature(rv, region):
+            raise ValueError('Stale view_id or changed scene/viewport. Call blender_view and use its returned view_id.')
+
+
+def preview(command):
+    require_view(command)
+    obj = object_now()
+    if obj.mode != 'SCULPT':
+        raise ValueError('Select a mesh in Sculpt Mode before previewing its active brush.')
+    snapshot = editor.snapshot()
+    if not snapshot['brush']:
+        raise ValueError('Configure an installed brush before previewing its gesture.')
+    with viewport() as (_, region, rv):
+        probes = [surface_hit(point, region, rv) for point in command['points']]
+        owner, _ = editor.effective('size')
+        if owner.use_locked_size == 'SCENE' and probes[0]['location']:
+            factor = 2 if bpy.app.version >= (5,0,0) else 1
+            field = 'unprojected_size' if hasattr(owner,'unprojected_size') else 'unprojected_radius'
+            center = Vector(probes[0]['location'])
+            right = rv.view_rotation @ Vector((1,0,0))
+            a = view3d_utils.location_3d_to_region_2d(region,rv,center)
+            b = view3d_utils.location_3d_to_region_2d(region,rv,center+right*getattr(owner,field)/factor)
+            if a is not None and b is not None:
+                snapshot['brush']['radius_pixels'] = (b-a).length
+                snapshot['brush']['radius'] = (b-a).length/region.width
+                snapshot['brush']['footprint'] = 'Nominal SCENE radius projected at the initial hit depth before pressure/falloff.'
+    return {'preview': {'probes': probes, 'start_on_target': probes[0]['target'],
+                        'brush': snapshot['brush'], 'symmetry': snapshot['symmetry'],
+                        'scope': 'Geometric aiming and nominal brush footprint. Actual deformation is measured after stroke.'},
+            'preview_points': command['points']}
 
 
 def result(image=True, **extra):
     value = {'edit_id': config['edit_id'], 'pid': os.getpid(), 'revision': state['revision'],
              'undo_depth': state['cursor'], 'redo_depth': len(state['hashes']) - state['cursor'] - 1,
              'source_path': config['blend_path'], 'recovery_path': config.get('working_path', str(root / 'recovery.blend')),
-             'journal_path': str(root / 'journal.jsonl'), **mesh_info(), **extra}
+             'journal_path': str(root / 'journal.jsonl'), **mesh_info(), 'editor': editor.snapshot(), **extra}
     if image:
         value['view'] = observe()
     return value
@@ -184,6 +244,23 @@ def result(image=True, **extra):
 
 def set_view(command):
     with viewport() as (area, region, rv):
+        if 'shading' in command:
+            shading = area.spaces.active.shading
+            permitted = {'type','light','color_type','show_shadows','show_cavity','cavity_type','background_type','studio_light'}
+            changes = []
+            for key, value in command['shading'].items():
+                if key not in permitted:
+                    raise ValueError('Viewport shading field: ' + ', '.join(sorted(permitted)))
+                prop = shading.bl_rna.properties[key]
+                if prop.type == 'BOOLEAN' and not isinstance(value, bool):
+                    raise ValueError(key + ' requires a boolean.')
+                if prop.type == 'ENUM' and value not in {p.identifier for p in prop.enum_items}:
+                    raise ValueError(key + ': ' + ', '.join(p.identifier for p in prop.enum_items))
+                if prop.type == 'STRING' and (not isinstance(value, str) or len(value) > 200):
+                    raise ValueError(key + ' requires a native studio light name.')
+                changes.append((key,value))
+            for key, value in changes:
+                setattr(shading,key,value)
         if 'highlight' in command:
             state['highlight'] = command['highlight']
         if 'isolate' in command:
@@ -218,33 +295,31 @@ def set_view(command):
             rv.view_location += (right * command['pan'][0] + up * command['pan'][1]) * rv.view_distance
         if command.get('projection'):
             rv.view_perspective = command['projection']
-        area.spaces.active.overlay.show_overlays = False
+        active = bpy.context.view_layer.objects.active
+        area.spaces.active.overlay.show_overlays = bool(active and active.mode == 'EDIT')
         rv.update()
 
 
 def stroke(command):
+    require_view(command)
     with viewport() as (area, region, rv):
-        if command.get('view_id') != state['view_id'] or state.get('view_signature') != view_signature(rv, region):
-            raise ValueError('Stale view_id or changed viewport. Call blender_view and use its returned view_id.')
         obj = object_now()
         if obj.mode != 'SCULPT':
             raise ValueError('Editing mode changed in Blender. Restore Sculpt Mode or discard the session.')
-        before = mesh_info()['geometry_hash']
-        asset = BRUSHES[command['brush']]
-        bpy.ops.brush.asset_activate(asset_library_type='ESSENTIALS',
-            relative_asset_identifier='brushes/essentials_brushes-mesh_sculpt.blend/Brush/' + asset)
-        brush = bpy.context.tool_settings.sculpt.brush
-        radius = max(1, round(command.get('radius', 0.08) * region.width))
-        brush.size = radius
-        brush.strength = command.get('strength', 0.5)
-        brush.use_frontface = True
-        brush.use_locked_size = 'VIEW'
-        settings = bpy.context.tool_settings.sculpt
-        axes = command.get('symmetry', '')
-        for axis in 'xyz':
-            setattr(settings, 'use_symmetry_' + axis, axis in axes)
-        # Native cursor projection and ray casting keep strokes aligned with the returned viewport.
+        before = mesh_info()
+        before_coords = coordinates(obj)
+        # Replay the same screen-space gesture that Blender receives from a mouse/tablet.
+        # Drag endpoints may leave the surface after a valid initial contact.
         points = command['points']
+        anchor = surface_hit(points[0], region, rv)
+        if not anchor['target']:
+            raise ValueError('Start the stroke on the selected visible mesh; its drag endpoint may leave the surface.')
+        before_view = state.get('last_view')
+        if not editor.groups().get('brush') and not command.get('brush'):
+            editor.activate('draw')
+        editor.configure(command)
+        brush = bpy.context.tool_settings.sculpt.brush
+        size_owner, _ = editor.effective('size')
         elems = []
         hits = 0
         for i, point in enumerate(points):
@@ -253,25 +328,48 @@ def stroke(command):
             if hit['target']:
                 hits += 1
             elems.append({'name': 'dsh', 'mouse': mouse, 'mouse_event': mouse,
-                          'location': tuple(hit['location']) if hit['hit'] else (0, 0, 0),
+                          'location': tuple(obj.matrix_world.inverted() @ Vector(anchor['location'])),
                           'pressure': point[2] if len(point) == 3 else 1.0,
-                          'size': float(radius), 'time': i * 0.04, 'is_start': i == 0,
+                          'size': float(size_owner.size), 'time': i * 0.04, 'is_start': i == 0,
                           'x_tilt': 0.0, 'y_tilt': 0.0})
-        if not hits:
-            raise ValueError('Stroke misses the selected mesh. Choose points on its visible surface.')
-        operation = bpy.ops.sculpt.brush_stroke(stroke=elems, override_location=True,
+        # Blender's paint_stroke exec re-raycasts every sample when override_location=True.
+        # Its native drag brushes accept off-surface mouse events and object-local locations.
+        # Match paint_brush_type_require_location in Blender's paint_stroke.cc.
+        brush_type = getattr(brush, 'sculpt_brush_type', getattr(brush, 'sculpt_tool', ''))
+        drag = brush_type in {'GRAB', 'ELASTIC_DEFORM', 'POSE', 'BOUNDARY', 'ROTATE', 'SNAKE_HOOK', 'THUMB', 'CLOTH'}
+        operation = bpy.ops.sculpt.brush_stroke(stroke=elems, override_location=not drag,
                       mode='INVERT' if command.get('invert') else 'NORMAL')
         if 'FINISHED' not in operation:
             raise RuntimeError('Blender cancelled the native brush stroke.')
         bpy.ops.ed.undo_push(message='DSH sculpt stroke')
-        after = mesh_info()['geometry_hash']
-        state['hashes'] = state['hashes'][:state['cursor'] + 1] + [after]
+        after = mesh_info()
+        state['hashes'] = state['hashes'][:state['cursor'] + 1] + [history_key(after)]
         state['cursor'] += 1
         if len(state['hashes']) > 65:
             state['hashes'] = state['hashes'][-65:]
             state['cursor'] = 64
         state['revision'] += 1
-        return {'changed': before != after, 'brush': command['brush'], 'surface_hits': hits}
+        state['view_id'] = None
+        radius = editor.snapshot()['brush']['radius'] or 0
+        bounds = [min(p[0] for p in points)-radius, min(p[1] for p in points)-radius*region.width/region.height,
+                  max(p[0] for p in points)+radius, max(p[1] for p in points)+radius*region.width/region.height]
+        delta = displacement(before_coords, obj, region, rv)
+        if delta.get('screen_bounds'):
+            for i in (0,1):
+                bounds[i] = min(bounds[i],delta['screen_bounds'][i])
+                bounds[i+2] = max(bounds[i+2],delta['screen_bounds'][i+2])
+        return {'changed': history_key(before) != history_key(after),
+                'geometry_changed': (before['geometry_hash'], before.get('topology_hash')) != (after['geometry_hash'], after.get('topology_hash')),
+                'attributes_changed': before.get('attributes_hash') != after.get('attributes_hash'),
+                'brush': brush.name, 'surface_hits': hits, 'sample_count': len(points),
+                'displacement': delta, 'before_view': before_view, 'detail_bounds': bounds,
+                'effect': 'geometry' if before['geometry_hash'] != after['geometry_hash'] else
+                          ('attributes' if before.get('attributes_hash') != after.get('attributes_hash') else 'no_change')}
+
+
+def history_key(info=None):
+    info = info or mesh_info()
+    return info['geometry_hash'] + ':' + info.get('topology_hash', '') + ':' + info.get('attributes_hash', '')
 
 
 def history(action):
@@ -286,7 +384,7 @@ def history(action):
             if not op.poll():
                 break
             op()
-            if mesh_info()['geometry_hash'] == state['hashes'][target]:
+            if history_key() == state['hashes'][target]:
                 state['cursor'] = target
                 state['revision'] += 1
                 return
@@ -298,8 +396,15 @@ def execute(command):
         return shared.execute(command)
     action = command['action']
     extra = {}
-    if action == 'stroke':
+    if action in ('brushes', 'settings'):
+        extra = getattr(editor, 'catalog' if action == 'brushes' else 'settings')(**{k: command[k] for k in ('query', 'offset', 'limit', *(['group'] if action == 'settings' else [])) if k in command})
+    elif action == 'configure':
+        with viewport():
+            extra['editor'] = editor.configure(command)
+    elif action == 'stroke':
         extra = stroke(command)
+    elif action == 'preview':
+        extra = preview(command)
     elif action in ('undo', 'redo'):
         history(action)
     elif action == 'view':
@@ -334,8 +439,27 @@ def deliver(path, request, response, capture=False):
     if capture:
         try:
             response['value']['view'] = observe()
+            value = response['value']
+            before = value.pop('before_view', None)
+            bounds = value.pop('detail_bounds', None)
+            points = value.pop('preview_points', None)
+            view = value['view']
+            if before:
+                value['feedback'] = comparison(before, view, bounds, root / ('detail-' + view['view_id'] + '.png'))
+            elif points:
+                value['feedback'] = aim_overlay(view, value['preview']['probes'],
+                    root / ('aim-' + view['view_id'] + '.png'), points, value['preview']['brush']['radius'])
+            elif value.get('probes'):
+                value['feedback'] = aim_overlay(view, value['probes'], root / ('probe-' + view['view_id'] + '.png'))
         except Exception as error:
-            response = {'ok': False, 'error': str(error)}
+            # Execution succeeded. Preserve its evidence so retries cannot repeat a mutation.
+            response['value']['observation_error'] = str(error)
+            response['value']['observation_recovery'] = 'Use blender_view to refresh the observation.'
+            response['value'].pop('before_view', None)
+            response['value'].pop('detail_bounds', None)
+            response['value'].pop('preview_points', None)
+            if not response['value'].get('view'):
+                state['view_id'] = None
             journal('capture-error', error=str(error))
     write_json(root / 'responses' / path.name, response)
     path.unlink()
@@ -376,8 +500,11 @@ def tick():
             response = {'ok': False, 'error': str(error)}
             journal('error', request_id=request['id'], error=str(error), traceback=traceback.format_exc())
         capture = response['ok'] and not state['closed'] and request['command']['action'] != 'render' and request['command'].get('observe', True)
+        if response['ok'] and not capture:
+            for internal in ('before_view','detail_bounds','preview_points'):
+                response['value'].pop(internal, None)
         if capture:
-            if config.get('object_name') and bpy.data.objects.get(config['object_name']):
+            if mesh_info()['object_name']:
                 object_now().data.update()
             bpy.context.view_layer.update()
             with viewport() as (area, region, rv):
@@ -388,10 +515,11 @@ def tick():
 
 
 def initialize():
-    global last_activity, shared
+    global last_activity, shared, editor
     try:
         if bpy.app.background:
             raise RuntimeError('Native viewport sculpting requires a windowed Blender graphics context.')
+        editor = NativeEditor(viewport, BRUSHES)
         if config.get('shared'):
             sys.path.insert(0, str(Path(__file__).parent))
             from shared_scene_runtime import SharedScene
@@ -426,7 +554,7 @@ def initialize():
                       'highlight': config.get('highlight', True), 'isolate': config.get('isolate', False)})
             rv.view_distance *= 1.15
             rv.update()
-            state['hashes'] = [mesh_info()['geometry_hash']]
+            state['hashes'] = [history_key()]
             bpy.ops.ed.undo_push(message='DSH sculpt session base')
             recovery()
             write_json(root / 'ready.json', {'ok': True, 'value': result()})

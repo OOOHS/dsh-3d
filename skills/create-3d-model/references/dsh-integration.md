@@ -1,39 +1,23 @@
-# Optional legacy file interfaces
+# Asset and file interfaces
 
-The default seven tools and shared runtime are described in shared-scene.md. Set exposeLegacyTools:true to expose these additional file-based tools, or enableSharedScene:false to select the legacy file runtime. These are optional compatibility interfaces and technical references.
+The shared runtime is described in shared-scene.md. Asset delivery and analysis tools are available alongside it. Each file operation uses the explicit saved input path; its outputs leave the live scene active. Save the current scene to capture a snapshot. Open an imported or alternative `.blend` to make it the live scene.
 
-## Scene and geometry
+## Asset delivery
 
-- `blender_status`: Blender availability, workspace and capability information.
-- `blender_scene_info` and `blender_object_info`: scene structure, exact object names, bounds, topology and materials.
-- `blender_python`: native bpy/bmesh scene operations with `bpy`, `bmesh`, `mathutils`, `workspace`, `input_path` and `output_path` in scope. Set `blend_path` to load the current scene before code runs, retrieve objects by stable names and edit existing geometry or add components. Establish operator context and set `dsh_result` for useful structured evidence. Omit `blend_path` when creating a new scene.
-- `blender_checkpoint`: `save` archives a saved scene, packable resources and optional evidence images with free-form `label`, `method`, `note` and `parent_id`. `list`/`get` recover alternatives; `restore` opens a checkpoint at `save_path`. The archive is workspace-local and independent of reconstruction scheduling. Final review checks the chosen current artifacts.
-- `blender_sculpt` and `blender_view`: persistent native brush edits and live images; see [sculpting.md](sculpting.md).
-- `blender_import`: import a supported portable model into a saved `.blend` when the task includes one.
+- `blender_status`: Blender and analysis-runtime availability.
+- `blender_import`: import GLB/glTF, FBX, OBJ, STL, USD, PLY or Collada into a clean scene saved at `save_path`. `blender_scene({action:"open",blend_path:"..."})` activates this result for editing.
+- `blender_export`: export `blend_path` to a portable format selected by `output_path`; selection_only scopes the saved scene's selected objects.
+- `blender_validate_scene`: structural inspection, with general, web, 3d-print and animation profiles.
+- `blender_validate_export`: import a portable file in a clean process and report structure, materials/UVs and animation presence. It detects supported structural issues; compare rendered appearance as appropriate to the task.
 
-## Images and delivery
+## Observation and analysis
 
-- `inspect_image`: observe a workspace image, crop `region: [left, top, right, bottom]` in normalized 0–1 coordinates and enlarge with `zoom: 1..4`. The returned image includes original dimensions, pixel crop coordinates and a source hash.
-- `blender_preview`: temporary camera/light preview from a standard axis or isometric view, with direct image feedback.
-- `blender_render`: render the scene's authored camera with direct image feedback; `blender_render_frames`: animation images.
-- `review_reconstruction`: `action: "begin"` registers the reference and an optional existing `blend_path`; `action: "status"` returns the editable checkpoint and review state; `action: "review"` (default) submits current renders and the required final `blend_path` for independent visual acceptance. The plugin continues a registered task at the public stop boundary until current evidence is approved. Inspect feedback and obtain a fresh approval after changes.
-- `blender_export`: save a portable model; `blender_validate_scene` and `blender_validate_export`: inspect structure and export/re-import compatibility.
-- `blender_helper_catalog` and `blender_helper_run`: discover and execute optional analysis helpers with their exact arguments.
+- `blender_scene({action:"inspect",detail:true})`: live object detail, including evaluated mesh counts, world bounds, UV/color layers, constraints, vertex groups, shape keys and animation. `evaluated:false` skips modifier evaluation. Queries report missing names and truncation.
+- `blender_view`: observe the live viewport or render a scene camera. `time_frame` retains the selected time for viewport observations; renders restore the preceding time after sampling. `frame` remains the boolean viewport framing option. `transparent` overrides render background transparency for that image.
+- `blender_preview`: render a saved asset with temporary camera/lighting and configurable framing.
+- `blender_render_frames`: render a saved scene at `frames` or start/end/step, returning frame numbers and image paths. `inspect_image` views the images; the animation-contact-sheet helper can combine them.
+- `blender_helper_catalog`: compact helper index; `helper` returns exact arguments. `blender_helper_run` executes a named helper with those arguments. Both are controlled by enableHelpers (default true). Maintenance helpers have a separate opt-in.
 
-Use `inspect_image` to inspect saved renders and compare local details. Sculpt tools return image blocks directly. Use ordinary file tools for project files and `web_search` / `web_fetch` for supplementary reference research and native Blender knowledge.
+## Compatibility
 
-## Paths and editing state
-
-Tool paths resolve inside the current conversation's workspace, including resolved symlinks. Copy external reference images into that workspace and keep original inputs preserved. Save durable results and versioned `.blend` files in the workspace. A sculpt session holds an isolated live copy. File tools can inspect or branch saved scenes while it is open; their results describe saved bytes. A commit publishes the live changes into a saved candidate. Outputs use separate paths while a source is open in an editor.
-
-Blender Python is scoped to Blender scene data. Use the host's dedicated tools for file and web work. Each background Python call has a fresh process; saved scene data carries across calls. Error output describes the failed operation and supports a focused repair.
-
-## Review reports
-
-Send a comparable reference view and useful alternate views of the actual current geometry, with reference planes and guide overlays hidden. Each review creates a fresh native agent with frozen reference/render evidence, the shared `inspect_image` tool and a private `submit_review` tool. It can observe repeatedly and correct tool validation feedback before submitting. Reports record the independent role configuration, observations, archived agent events, source/render hashes and the supplied `.blend` hash; the live review agent is released after the round. `approved: true` from a successful report of the current final artifacts is the completion requirement. A rejected review keeps the task active. Repeated automatic endings with unchanged work receive one bounded context recovery, then pause with the saved checkpoint when stalled; new successful operations or scene changes reset the idle window. An unavailable assessment retains an `awaiting-review` task and allows another review attempt. Configured continuation resource limits preserve a paused, incomplete task. User cancellation stops the active turn; a fresh `begin` resumes work on direct user continuation. Technical export validation complements visual acceptance.
-
-## Current scene
-
-Each brush commit selects its saved scene as the current checkpoint. Use that file as `blend_path` to build on its shaping, or select another saved candidate to explore a different approach. Candidate selection is advisory; all saved scenes remain editable. The state notice is persisted in the ordinary conversation history; resumed sessions start paused and return their checkpoint through `action: "status"`.
-
-Saved mesh data is editable through bpy/bmesh after sculpting. Generator parameters describe an earlier construction; work with the current mesh data for incremental changes, and choose the scope of regeneration explicitly. Components can remain separate objects through generation and sculpting, then be positioned, parented, joined or otherwise assembled in the current scene.
+`exposeLegacyTools:true` additionally exposes `blender_scene_info`, `blender_object_info`, `blender_python` and `blender_render` for file-based operations. `enableSharedScene:false` selects the legacy file runtime. Python availability follows enablePython. The shared runtime accepts further Blender operations through `blender_execute` and reusable project tools.

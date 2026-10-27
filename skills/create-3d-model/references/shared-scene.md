@@ -4,7 +4,7 @@ One native Blender process owns this conversation's working scene. Code, native 
 
 ## Incremental execution
 
-`blender_execute({script:"..."})` runs with the existing scene loaded. Globals include `bpy`, `bmesh`, `mathutils`, `workspace`, `params` and `dsh`; set JSON-safe `dsh_result` for structured output. Code executes in an Object Mode viewport context. Useful existing changes remain in the scene. Use explicit scene creation or component replacement according to your intended scope.
+`blender_execute({script:"..."})` runs with the existing scene loaded. Globals include `bpy`, `bmesh`, `mathutils`, `workspace`, `params` and `dsh`; set JSON-safe `dsh_result` for structured output. Code executes in the current native viewport context, retaining mode, selection and brush settings. Supply `mode:"OBJECT"`, `mode:"EDIT"` or `mode:"SCULPT"` when an operation needs a mode change. `blender_scene({action:"configure",object_name:"Hair",mode:"EDIT"})` also changes the native context explicitly. Useful existing changes remain in the scene. Use explicit scene creation or component replacement according to your intended scope.
 
 Every successful code operation returns a revision, working `.blend`, affected-object summary, script result and (by default) a viewport image. `observe:false` returns text evidence for queries or batched work. The runtime saves the current working file. A Python exception restores the scene from the preceding operation; diagnostics describe the failure. Project file edits remain ordinary filesystem changes.
 
@@ -27,6 +27,7 @@ def run(params):
 The `dsh` object exposes the native bridge inside code:
 
 - `dsh.inspect(object_names=None, limit=40)` returns scene/object facts.
+- `dsh.editor()` reads the native editing context; `dsh.configure(object_name=None, mode=None, tool=None)` changes selection, mode or workspace tool.
 - `dsh.select(object_name, sculpt=False, **view_options)` selects and frames an object. `sculpt=True` enters native brush mode.
 - `dsh.view(**options)` returns a viewport observation with view ID and target surface samples.
 - `dsh.stroke(brush=..., view_id=..., points=..., radius=..., strength=...)` uses the same normalized coordinate contract as the brush tool.
@@ -40,4 +41,4 @@ Tools can import project modules using normal Python facilities. Explicit module
 
 `blender_scene({action:"save",save_path:"models/candidate.blend"})` saves a project snapshot while keeping the scene open. `blender_checkpoint` archives saved files and optional comparison images; opening any restored/saved file lets you revisit it. Working snapshots and journals live under `.dsh-blender/scenes/<scene_id>/`. `close` releases the process and retains recovery. Idle processes save and exit after the configured timeout.
 
-The native viewport requires a desktop graphics context. Fixed-topology brushes use prepared base meshes; regular bpy operations remain available for topology changes. File-based tools and the upstream helper catalog can be enabled with `exposeLegacyTools:true`; `enableSharedScene:false` selects the legacy file-based runtime. See [dsh-integration.md](dsh-integration.md) for those compatibility interfaces.
+The native viewport requires a desktop graphics context. Fixed-topology brushes use prepared base meshes; regular bpy operations remain available for topology changes. Asset import/export, validation, preview, animation frames and helper discovery are available by default. `exposeLegacyTools:true` adds duplicate file-based scene inspection/Python/render interfaces; `enableSharedScene:false` selects the legacy file-based runtime. See [dsh-integration.md](dsh-integration.md) for those compatibility interfaces.

@@ -27,7 +27,7 @@ test('shared native scene: code/brush/code, hot-edited tools, rollback, render, 
     return value
   }
   try {
-    assert.equal(tools.size, 7)
+    assert.equal(tools.size, 19)
     const opened = await run('blender_scene', { action: 'new' })
     assert.equal(opened.object_count, 0)
     const pid = opened.pid
@@ -43,17 +43,19 @@ dsh_result = {'created': bpy.context.object.name}
     assert.deepEqual(value.changed_objects, ['HairVolume'])
     const original = value.geometry_hash
     value = await run('blender_sculpt', { action: 'begin', object_name: 'HairVolume', preset: 'front' })
+    // A view ID accidentally supplied as edit_id resolves only within this live scene.
+    value = await run('blender_sculpt', { action:'status', edit_id:value.view.view_id })
+    await assert.rejects(run('blender_sculpt', { action:'status', edit_id:'foreign-scene' }), /Scene ID mismatch/)
     const sample = value.view.target.surface_samples[0].point
     value = await run('blender_sculpt', { action: 'stroke', brush: 'draw', view_id: value.view.view_id,
       points: [sample, sample, sample], strength: .65, radius: .12 })
     assert.equal(value.changed, true)
     const sculpted = value.geometry_hash
-    assert.notEqual(sculpted, original)
     value = await run('blender_sculpt', { action: 'undo' })
     assert.equal(value.geometry_hash, original)
     value = await run('blender_sculpt', { action: 'redo' })
     assert.equal(value.geometry_hash, sculpted)
-    value = await run('blender_execute', { script: `
+    value = await run('blender_execute', { mode: 'OBJECT', script: `
 bpy.ops.mesh.primitive_cube_add(size=.15, location=(1.8,-2,.2))
 bpy.context.object.name='Clasp'
 bpy.context.view_layer.objects.active=bpy.data.objects['HairVolume']

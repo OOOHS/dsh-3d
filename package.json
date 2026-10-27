@@ -1,6 +1,6 @@
 {
   "name": "dsh-3d",
-  "version": "0.2.3-dev.11",
+  "version": "0.2.3-dev.19",
   "private": true,
   "description": "A DeepSeek Harness plugin for Blender-based 3D modeling and image reconstruction.",
   "repository": {
@@ -36,7 +36,8 @@
     "README.md",
     "README.zh-CN.md",
     "CHANGELOG.md",
-    "docs/compatibility-v0.2.3.md"
+    "docs/compatibility-v0.2.3.md",
+    "docs/editing-feedback.md"
   ],
   "scripts": {
     "prepack": "node scripts/clean-package.js",
@@ -47,9 +48,12 @@
     "test:dsh": "node test-support/dsh-profile-smoke.js",
     "validate": "node scripts/validate-package.js",
     "test:sculpt": "RUN_SCULPT_TESTS=1 node --test test/sculpt.integration.test.js",
+    "test:editor": "RUN_EDITOR_TESTS=1 node --test test/native-editor.integration.test.js",
     "test:scene": "RUN_SCENE_TESTS=1 node --test test/scene.integration.test.js",
     "test:review-agent": "node test-support/review-agent-smoke.js",
-    "test:continuation": "node test-support/continuation-smoke.js"
+    "test:continuation": "node test-support/continuation-smoke.js",
+    "test:feedback": "RUN_FEEDBACK_TESTS=1 node --test test/editing-feedback.integration.test.js",
+    "test:acceptance": "RUN_BLENDER_TESTS=1 RUN_HELPER_TESTS=1 RUN_SCENE_TESTS=1 RUN_SCULPT_TESTS=1 RUN_EDITOR_TESTS=1 RUN_NATIVE_MODELING_TESTS=1 RUN_FEEDBACK_TESTS=1 node --test --test-concurrency=1"
   },
   "keywords": [
     "deepseek-harness",

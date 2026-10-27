@@ -19,7 +19,15 @@ function fixture(t) {
 test('brush coordinates and view parameters reject malformed or unbounded input', () => {
   const stroke = { action: 'stroke', brush: 'draw', view_id: 'view', points: [[0.5, 0.5], [0.6, 0.5, 1]] }
   assert.doesNotThrow(() => validateCommand(stroke))
-  for (const patch of [{ points: [[1.2, 0], [0, 0]] }, { radius: Infinity }, { brush: 'execute' }, { view_id: '' }, { symmetry: 'yx' }]) {
+  assert.doesNotThrow(() => validateCommand({ ...stroke, brush: undefined }))
+  assert.doesNotThrow(() => validateCommand({ ...stroke, brush: 'Pose' }))
+  assert.doesNotThrow(() => validateCommand({ action:'preview', view_id:'v', points:stroke.points }))
+  assert.throws(() => validateCommand({ ...stroke, action:'preview' }), /configured brush/)
+  assert.throws(() => validateCommand({ action:'view', shading:[] }))
+  assert.doesNotThrow(() => validateCommand({ action: 'configure', settings: { brush: { falloff_shape: 'PROJECTED' } } }))
+  assert.throws(() => validateCommand({ action: 'settings', limit: 1000 }))
+  assert.throws(() => validateCommand({ action: 'configure', settings: { arbitrary: {} } }))
+  for (const patch of [{ points: [[1.2, 0], [0, 0]] }, { radius: Infinity }, { brush: {} }, { view_id: '' }, { symmetry: 'yx' }]) {
     assert.throws(() => validateCommand({ ...stroke, ...patch }))
   }
   assert.throws(() => validateCommand({ action: 'view', rotation: [0, 0, 0, 0] }))

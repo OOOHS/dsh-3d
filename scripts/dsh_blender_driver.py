@@ -386,6 +386,7 @@ def _import_asset_file(path: Path) -> None:
 
 def _import_asset(payload: dict[str, Any], save: bool) -> dict[str, Any]:
     source = Path(payload["source_path"])
+    bpy.ops.wm.read_factory_settings(use_empty=True)
     before = set(bpy.data.objects.keys())
     _import_asset_file(source)
     imported = sorted(name for name in bpy.data.objects.keys() if name not in before)

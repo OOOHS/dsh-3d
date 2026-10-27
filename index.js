@@ -1,3 +1,4 @@
+import { createModelingNotesTools } from './lib/modeling-notes.js'
 import { spawn } from 'node:child_process'
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { mkdir, mkdtemp, readFile, readdir, realpath, rm, stat, writeFile } from 'node:fs/promises'
@@ -16,6 +17,7 @@ import { MODELER_AGENT, REVIEWER_AGENT, agentSchema, agentSettings, registerAgen
 import { createInspectImageTool } from './lib/inspect-image.js'
 import { createCheckpointTool } from './lib/checkpoints.js'
 import { SceneSessions, createSceneTools } from './lib/scene-session.js'
+import { createNativeEditTool } from './lib/native-modeling.js'
 
 export const name = 'dsh-3d'
 export const inject = ['tools', 'skills']
@@ -704,7 +706,7 @@ function createTools(config) {
 
   tools.push(defineTool({
     name: 'blender_import',
-    description: 'Import an existing GLB/glTF, FBX, OBJ, STL, USD, PLY, or Collada asset into a clean Blender scene and save a versioned .blend engineering source. Use before editing portable assets that are not already .blend files.',
+    description: 'Import an existing GLB/glTF, FBX, OBJ, STL, USD, PLY, or Collada asset into a clean Blender scene and save a versioned .blend engineering source. Open the resulting blendPath with blender_scene open to edit it in the shared scene. The current live scene stays active until then.',
     parameters: {
       source_path: { type: 'string', required: true, description: 'Existing portable model path inside the workspace.' },
       save_path: { type: 'string', required: true, description: 'New .blend output path inside the workspace.' },
@@ -970,6 +972,7 @@ function createTools(config) {
         const step = args.step ?? 1
         if (!Number.isInteger(step) || step < 1) throw new Error('step must be a positive integer')
         if (args.end < args.start) throw new Error('end must be greater than or equal to start')
+        if (Math.floor((args.end - args.start) / step) + 1 > 1000) throw new Error('frames must contain 1 to 1000 integers')
         frames = []
         for (let frame = args.start; frame <= args.end; frame += step) frames.push(frame)
       }
@@ -1005,7 +1008,7 @@ function createTools(config) {
 
   tools.push(defineTool({
     name: 'blender_export',
-    description: 'Export a .blend scene to a portable 3D file. Supports GLB/glTF, FBX, OBJ, STL, USD/USDA/USDC, and PLY. Prefer GLB when the user does not specify a format, then verify the non-empty export.',
+    description: 'Export a .blend scene to a portable 3D file. Supports GLB/glTF, FBX, OBJ, STL, USD/USDA/USDC, and PLY. The source is a saved snapshot; blender_scene save captures the live scene. Choose a format for the requested destination.',
     parameters: {
       blend_path: { type: 'string', required: true, description: 'Existing .blend file inside the current dsh workspace.' },
       output_path: { type: 'string', required: true, description: 'New portable model path inside the workspace; extension selects format.' },
@@ -1138,7 +1141,7 @@ function createTools(config) {
     },
   }))
 
-  if (config.enableHelpers) {
+  if (config.enableHelpers !== false) {
     tools.push(defineTool({
       name: 'blender_helper_catalog',
       description: 'List the bundled deterministic reference-analysis, wireframe, contour, multiview, UV, texture, look, repair, and animation-QA helpers with their exact arguments and dependency availability. Call before blender_helper_run when the needed helper or fields are uncertain.',
@@ -1277,17 +1280,25 @@ export function apply(ctx, config) {
       return execute()
     }) : execute()
   } })
-  if (config.exposeLegacyTools === true || config.enableSharedScene === false) {
-    for (const tool of createTools(config)) ctx.tools.register(wrap(observeRender(tool)))
+  // Asset delivery and analysis are independent of the scene transport.
+  const assetTools = new Set(['blender_status', 'blender_import', 'blender_export',
+    'blender_validate_scene', 'blender_validate_export', 'blender_preview',
+    'blender_render_frames', 'blender_helper_catalog', 'blender_helper_run'])
+  for (const tool of createTools(config)) {
+    if (assetTools.has(tool.name) || config.exposeLegacyTools === true || config.enableSharedScene === false) {
+      ctx.tools.register(wrap(observeRender(tool)))
+    }
   }
   if (config.enableSharedScene !== false) {
     for (const tool of createSceneTools(sessions)) {
       if (tool.name !== 'blender_execute' || config.enablePython !== false) ctx.tools.register(wrap(tool, false))
     }
+    ctx.tools.register(wrap(createNativeEditTool(sessions), false))
   }
   ctx.tools.register(wrap(createCheckpointTool(config, {
     resolve: resolveWorkspacePath, file: assertRegularFile,
     writable: (path, overwrite) => assertWritableTarget(path, overwrite, 'save_path'),
+    activate: config.enableSharedScene !== false ? (path, exec) => sessions.start({ action: 'open', blend_path: path }, exec) : undefined,
     snapshot: (source, target, exec) => runBlender(config, exec, 'execute', {
       script: 'bpy.ops.file.pack_all()', workspace: sessionWorkspace(exec),
       input_path: source, output_path: target,
@@ -1301,6 +1312,7 @@ export function apply(ctx, config) {
     writable: (path, overwrite) => assertWritableTarget(path, overwrite, 'report_path'),
   }, reconstruction))
   ctx.tools.register(createInspectImageTool(ctx, config, { resolve: resolveWorkspacePath }))
+  for (const tool of createModelingNotesTools(resolveWorkspacePath, config)) ctx.tools.register(tool)
   if (config.registerAgentPresets !== false) registerAgentPresets(ctx, config)
 }
 

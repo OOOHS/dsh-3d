@@ -1,6 +1,59 @@
+## 0.2.3-dev.19
+
+- Exclude Blender session-local datablock IDs from persistent scene fingerprints so undo/reload preserves the redo branch.
+- Add a save/reload fingerprint regression covering materials, curves, modifiers and animation.
+- Add test:acceptance to enable every Blender integration suite and update the DSH smoke test to check the current named capabilities.
+
+## 0.2.3-dev.18
+
+- Start import and export round-trip checks with an empty Blender scene, preventing default startup objects from contaminating asset inspection.
+- Restore default asset import/export, structural and round-trip validation, saved-scene preview, animation frame rendering and helper discovery independently of legacy scene transport.
+- Reuse upstream object details in live inspection, with opt-in evaluated topology and explicit missing-name feedback.
+- Add animation-time selection to live views and temporary time/transparency overrides to camera renders, restoring render state on failure.
+- Exercise saved asset import, live editing, export/re-import, animation observations and analysis helper execution together.
+
+# 0.2.3-dev.17
+
+- Rank partial operation-note matches and return the index on empty search results.
+- Activate restored checkpoints in the current shared Blender scene.
+- Extend change evidence to curve data, modifier parameters, material links and animation RNA.
+- Test continued edits across save/restore for all four domains.
+
+# 0.2.3-dev.15
+
+- Resolve current-scene editing IDs and recover a current view ID supplied as edit ID.
+- Synchronize brush entry boundaries with native mode and object changes.
+- Prioritize active editing context in compact feedback; retain full diagnostic evidence.
+
 # Changelog
 
 All notable changes to this project are documented in this file.
+
+## 0.2.3-dev.14 - 2026-10-24
+
+- Extend `blender_edit` with native mesh selection, proportional transforms and selected-face extrusion. Base-density primitives retain simple editable topology. The existing mixed and native presets share these controls.
+- Add optional read-only brush previews with visible-target/occluder hits, gesture arrows and nominal radius. Return full viewport images plus same-view before/after detail panels for strokes and local mesh edits.
+- Report effective viewport shading and camera render settings, world/image-space deformation, selection counts and geometry/attribute/no-change outcomes. Compact action text keeps feedback within the host's context-pruning budget.
+- Match raycasts to viewport visibility, invalidate stale coordinates after unobserved edits, disable animated view changes and refresh the native selection context after redraw.
+- Preserve committed operation evidence when observation fails, so stable request retries retain the original mutation. Preserve existing native and mixed modeling workflows and independent review.
+- Validate native brush size/drag, masks/undo, visible/X-ray selection, extrusion, proportional editing, comparison images, hidden occluders, partial image failure and shared code/brush edits in windowed Blender.
+
+## 0.2.3-dev.13 - 2026-10-24
+
+- Add an independently selectable native modeling experiment preset, with an agent-scoped capability allowlist in tool presentation and dispatch. Keep the regular mixed code-and-brush modeler available.
+- Add `blender_edit` for native primitives, transforms, duplication, assembly, solid materials, density preparation, cameras and lights in the existing live scene. Mesh creation and density use fixed Blender operators.
+- Preserve complete object-operation checkpoints, atomic error recovery and undo/redo through intervening sculpt changes. Reuse the installed native brushes and editing state.
+- Retain native viewport hiding through selection, transforms and duplication; validate visibility controls against their intended action. Preserve the completed experiment before applying this runtime fix.
+- Keep the experiment's interface contract concise and its method/work-order choices autonomous. Preserve the standard skill and review agent configuration.
+- Exercise dense primitive creation, genuine sculpt changes, copying sculpted geometry, undo/redo, assembly, remesh, rendering and recovery in Blender. Check actual DSH capability isolation and direct dispatch rejection of code escape paths.
+
+## 0.2.3-dev.12 - 2026-10-23
+
+- Read and configure Blender's actual selection, object mode, workspace tool and brush context. Preserve native context across Python calls and retain stroke history through read-only queries.
+- Discover installed Essentials sculpt assets and searchable RNA parameters through the existing brush tool, with paginated results. Retain legacy brush aliases and all seven default tool entries.
+- Respect the effective unified/per-brush setting owner, adapt Blender 5 diameter semantics, preserve omitted settings and report the effective radius, pressure/falloff and symmetry.
+- Replay drag-brush paths beyond the silhouette with object-local anchoring. Keep Blender's native raycasts for surface brushes. Report measured displacement and mask/Face Sets attribute changes; include those attributes in undo boundaries.
+- Add native regressions for radius scaling, off-surface dragging, context persistence, settings discovery, masks, mode changes and existing scene/legacy flows.
 
 ## 0.2.3-dev.11 - 2026-10-23
 
