@@ -1,6 +1,6 @@
 {
   "name": "dsh-3d",
-  "version": "0.2.3-dev.19",
+  "version": "0.2.3-dev.20",
   "private": true,
   "description": "A DeepSeek Harness plugin for Blender-based 3D modeling and image reconstruction.",
   "repository": {

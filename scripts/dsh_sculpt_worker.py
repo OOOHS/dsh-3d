@@ -139,7 +139,16 @@ def target_evidence(region, rv):
     return {'object_name': obj.name, 'screen_bounds': bounds, 'surface_samples': samples}
 
 
-def observe():
+def observe(refresh=False):
+    if refresh:
+        # Code can observe several mutations within one timer callback. Flush
+        # native sculpt buffers before capturing those synchronous observations.
+        if mesh_info()['object_name']:
+            object_now().data.update()
+        bpy.context.view_layer.update()
+        with viewport() as (area, region, rv):
+            area.tag_redraw()
+            bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
     with viewport() as (area, region, rv):
         rv.update()
         render = bpy.context.scene.render
@@ -434,23 +443,27 @@ def execute(command):
     return result(image=False, **extra)
 
 
+def capture_result(value, refresh=False):
+    value['view'] = observe(refresh=refresh)
+    before = value.pop('before_view', None)
+    bounds = value.pop('detail_bounds', None)
+    points = value.pop('preview_points', None)
+    view = value['view']
+    if before:
+        value['feedback'] = comparison(before, view, bounds, root / ('detail-' + view['view_id'] + '.png'))
+    elif points:
+        value['feedback'] = aim_overlay(view, value['preview']['probes'],
+            root / ('aim-' + view['view_id'] + '.png'), points, value['preview']['brush']['radius'])
+    elif value.get('probes'):
+        value['feedback'] = aim_overlay(view, value['probes'], root / ('probe-' + view['view_id'] + '.png'))
+    return value
+
+
 def deliver(path, request, response, capture=False):
     """Capture after Blender's event loop has refreshed sculpt GPU buffers."""
     if capture:
         try:
-            response['value']['view'] = observe()
-            value = response['value']
-            before = value.pop('before_view', None)
-            bounds = value.pop('detail_bounds', None)
-            points = value.pop('preview_points', None)
-            view = value['view']
-            if before:
-                value['feedback'] = comparison(before, view, bounds, root / ('detail-' + view['view_id'] + '.png'))
-            elif points:
-                value['feedback'] = aim_overlay(view, value['preview']['probes'],
-                    root / ('aim-' + view['view_id'] + '.png'), points, value['preview']['brush']['radius'])
-            elif value.get('probes'):
-                value['feedback'] = aim_overlay(view, value['probes'], root / ('probe-' + view['view_id'] + '.png'))
+            response['value'] = capture_result(response['value'])
         except Exception as error:
             # Execution succeeded. Preserve its evidence so retries cannot repeat a mutation.
             response['value']['observation_error'] = str(error)

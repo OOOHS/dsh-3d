@@ -13,6 +13,7 @@ import bpy
 import bmesh
 import mathutils
 from native_editor import mesh_state
+from replay_api import ReplayAPI
 from scene_fingerprint import object_details
 from dsh_blender_driver import _object_detail
 
@@ -36,7 +37,10 @@ class SharedScene:
         self.last_brush_base = None
         self.native_modeling = None
         self.state['highlight'] = False
-        self.api = SimpleNamespace(inspect=self.inspect, select=self.select,
+        self.replay = ReplayAPI(self)
+        self.api = SimpleNamespace(edit=self.replay.edit, sculpt=self.replay.sculpt,
+                                   project=self.replay.project, emit=self.replay.emit,
+                                   inspect=self.inspect, select=self.select,
                                    view=self.view, stroke=self.stroke, render=self.render,
                                    editor=self.host['editor'].snapshot, configure=self.configure)
 
@@ -215,7 +219,7 @@ class SharedScene:
         if options.get('object_name'):
             self.select(options.pop('object_name'))
         self.host['set_view'](options)
-        return self.host['observe']()
+        return self.host['observe'](refresh=True)
 
     def stroke(self, **options):
         value = self.host['stroke'](options)
@@ -282,6 +286,7 @@ class SharedScene:
         return record
 
     def python(self, command):
+        self.replay.outputs = []
         before = self.signatures()
         previous_context = (self.config.get('object_name'), self.active().mode if self.active() else 'OBJECT')
         recovery = self.root / 'before-python.blend'
@@ -328,7 +333,7 @@ class SharedScene:
         if not before and after:
             with self.host['viewport']():
                 bpy.ops.view3d.view_all(center=False)
-        return {'script_result': value, 'stdout': stream.getvalue()[-20000:],
+        return {'script_result': value, 'emitted_images': list(self.replay.outputs), 'stdout': stream.getvalue()[-20000:],
                 'source_sha256': source_hash, 'source_snapshot': str(source_snapshot),
                 'changed_objects': changed[:80], 'changed_object_count': len(changed),
                 'change_scope': 'Object transforms, base mesh, curves, modifier RNA, material nodes/links, constraints and animation RNA. Bounded RNA traversal; simulation caches, external resources and unlisted data require direct inspection.',

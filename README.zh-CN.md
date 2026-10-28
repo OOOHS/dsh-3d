@@ -39,6 +39,12 @@ DSH 3D 希望给 agent 足够宽的建模操作空间、有效反馈，以及改
 - 默认提供 1 个精简建模 skill，附带原生画笔说明和可选分析工具。29 个上游领域 skill 保留为兼容资料，可通过 `registerModuleSkills: true` 显式启用。
 - 默认开放资产导入导出、结构与回读验证、快照预览、动画抽帧和辅助工具发现。26 个上游 helper 中的维护工具单独控制；目录返回简短索引，按名称读取完整参数。`exposeLegacyTools:true` 增加重复的旧版文件场景接口；`enableSharedScene:false` 选择旧版文件执行方式。
 
+## 可重放代码
+
+**DSH 3D 代码建模**（`dsh-3d-code-modeler`）使用 dsh 自带的程序化工具接口。全部已授权工具都成为 `run_code` 中的 `await tools.工具名(...)`：创建、Python、网格编辑、画笔、观察、导出、评审与经验读写可以保存在同一份可修改程序里。Agent 调整完整程序后重跑，画笔步骤也随几何构造一起执行。原有混合建模和原生实验配置继续提供直接工具入口。
+
+Blender Python 内新增 `dsh.edit`、`dsh.sculpt`、`dsh.project` 和 `dsh.emit`，复用现有原生实现，支持定位局部、执行画笔和返回图像。每个程序的变量在本次执行内有效，场景和文件持续存在。重放所选起点、参数与操作决定结果；跨多个工具调用的失败会保留此前已完成的操作。[执行契约与完整示例](skills/create-3d-model/references/code-replay.md)。
+
 ## 共享工作场景与项目工具
 
 ### 原生建模对照实验

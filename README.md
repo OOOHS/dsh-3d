@@ -6,6 +6,12 @@ A [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) plugin for
 
 DSH 3D is developed from [CheshireJCat/blender](https://github.com/CheshireJCat/blender) (`dsh-blender` 0.2.3, commit `9bd95e97a61096cfae1edb0f88fcd2be54b0adee`). The upstream Git history, license files, skills, tools, and analysis helpers are preserved.
 
+## Replayable code
+
+The **DSH 3D 代码建模** preset (`dsh-3d-code-modeler`) uses dsh's programmatic tool runtime. Every authorized tool is callable as `await tools.name(...)` inside `run_code`, covering geometry, native brushes, observation, assets, reviews and operation notes. Save and revise a complete program; replay executes its brush steps together with construction. Existing mixed and native presets retain direct tool calls.
+
+Inside Blender Python, `dsh.edit`, `dsh.sculpt`, `dsh.project` and `dsh.emit` reuse native operations and return explicit visual feedback. Programs choose their initial scene and preserve the relevant parameters and operations. Earlier completed tool calls remain applied after a later failure. See the [code replay contract and examples](skills/create-3d-model/references/code-replay.md).
+
 ## General Blender workspace
 
 The default modeler uses the mixed interface: Python and native controls share a live scene. Tasks can cover geometry, curves, modifiers, Geometry Nodes, materials, lighting, rigging, animation and reconstruction through Blender APIs. Native-only mode remains an explicitly selected experimental preset.

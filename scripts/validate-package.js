@@ -33,6 +33,7 @@ const required = [
   'scripts/inspect_image.py',
   'scripts/dsh_sculpt_worker.py',
   'scripts/shared_scene_runtime.py',
+  'scripts/replay_api.py',
   'scripts/native_editor.py',
   'scripts/native_modeling.py',
   'scripts/mesh_controls.py',

@@ -1,3 +1,10 @@
+## 0.2.3-dev.20
+
+- Add the code-modeler preset using the host's programmatic tool runtime: every authorized tool remains behind the existing registry, policy and result pipeline.
+- Add thin Blender Python adapters for native edits, full sculpt actions, world/object-local point projection and explicit image emission, including brush comparison images.
+- Document editable replay programs, initialization choices, image feedback and partial-failure semantics. Existing mixed/native/reviewer presets retain their interfaces.
+- Exercise repeated sculpt recipes, changed parameters, scene rollback and images returned through both Python and the host code interface.
+
 ## 0.2.3-dev.19
 
 - Exclude Blender session-local datablock IDs from persistent scene fingerprints so undo/reload preserves the redo branch.
