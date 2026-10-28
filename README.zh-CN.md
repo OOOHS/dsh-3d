@@ -1,4 +1,4 @@
-# DSH 3D
+# dsh-3d · DSH 3D
 
 [English](README.md)
 
